@@ -8,6 +8,7 @@ The following features are implemented:
 * Imenu support for rule-heads (including topic when relevant).
 * Outline Mode support for comments and topics.
 * Comint support for running the Dialog debugger.
+* Flymake support.
 
 The following commands are bound in the major-mode keymap:
 

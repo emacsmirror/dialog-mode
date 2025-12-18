@@ -41,6 +41,7 @@
 ;; * Imenu support for rule-heads (including topic when relevant).
 ;; * Outline Mode support for comments and topics.
 ;; * Comint support for running the Dialog debugger.
+;; * Flymake support.
 
 ;; The following commands are bound in the major-mode keymap:
 
@@ -412,6 +413,12 @@ existing parser state PPSS over calling `syntax-ppss'."
 
 (defalias 'dialog--in-comment-or-string-p #'dialog--start-of-comment-or-string
   "Return a non-nil value when inside a comment or string.")
+
+(defun dialog--project-directory ()
+  "Return the current project directory or the current directory."
+  (if-let* ((project (project-current)))
+      (project-root project)
+    default-directory))
 
 ;;;; Special statement parser
 
@@ -1006,9 +1013,7 @@ displayed if it exists."
              (game-directory (if (equal prompt '(16))
                                  (read-directory-name
                                   "Game directory: " nil nil t)
-                               (if-let* ((project (project-current)))
-                                   (project-root project)
-                                 default-directory)))
+                               (dialog--project-directory)))
              ;; Prompt for game files if none are defined or if there was a
              ;; prefix argument.
              (game-files (or (and (not prompt) dialog-game-files)
@@ -1183,6 +1188,78 @@ If JUSTIFY is non-nil, justify as well."
         (fill-paragraph justify)
         t))))
 
+;;;; Flymake
+
+(defcustom dialog-compiler-program "dialogc"
+  "Specifies the name of the Dialog compiler executable."
+  :type 'string)
+
+(defun dialog--make-flymake-command ()
+  "Return the list of strings to run the Flymake process."
+  (append (list dialog-compiler-program
+                "--output" (if (eq system-type 'windows-nt)
+                               "nul"
+                             "/dev/null"))
+          dialog-game-files))
+
+(defvar-local dialog--flymake-proc nil
+  "The currently active Flymake process.")
+
+(defconst dialog-error-regexp
+  (rx line-start
+      (group (1+ alpha)) ": "          ; Error type
+      (group (1+ (not ?,))) ", line "  ; Filename
+      (group (1+ digit)) ": "          ; Line number
+      (group (1+ not-newline))         ; Message
+      line-end)
+  "A regexp pattern which matches error output from the Dialog compiler.")
+
+(defun dialog-flymake (report-fn &rest _args)
+  "Flymake backend for Dialog.
+
+REPORT-FN is Flymake's callback function."
+  (unless (executable-find dialog-compiler-program)
+    (error "Cannot find Dialog compiler"))
+  (when (process-live-p dialog--flymake-proc)
+    (kill-process dialog--flymake-proc))
+  (let ((default-directory (dialog--project-directory))
+        (source-buffer (current-buffer)))
+    (save-restriction
+      (widen)
+      (setq dialog--flymake-proc
+            (make-process
+             :name "dialog-flymake"
+             :noquery t
+             :connection-type 'pipe
+             :buffer (generate-new-buffer " *dialog-flymake*")
+             :command (dialog--make-flymake-command)
+             :sentinel
+             (lambda (proc _event)
+               (when (memq (process-status proc) '(exit signal))
+                 (unwind-protect
+                     (if (with-current-buffer source-buffer
+                           (eq proc dialog--flymake-proc))
+                         (with-current-buffer (process-buffer proc)
+                           (goto-char (point-min))
+                           (cl-loop
+                            while (search-forward-regexp
+                                   dialog-error-regexp nil t)
+                            for type = (pcase (match-string 1)
+                                         ("Error"   :error)
+                                         ("Warning" :warning)
+                                         (_         :note))
+                            for filename = (match-string 2)
+                            for beg = (cons
+                                       (string-to-number (match-string 3)) 0)
+                            for msg = (match-string 4)
+                            collect (flymake-make-diagnostic
+                                     filename beg nil type msg)
+                            into diags
+                            finally (funcall report-fn diags)))
+                       (flymake-log :warning "Canceling obsolete check %s"
+                                    proc))
+                   (kill-buffer (process-buffer proc))))))))))
+
 ;;;; Imenu
 
 (defcustom dialog-imenu-topic-separator imenu-level-separator
@@ -1269,7 +1346,10 @@ If JUSTIFY is non-nil, justify as well."
   (setq-local indent-line-function #'dialog-indent-line)
   (setq-local normal-auto-fill-function #'dialog-do-autofill)
   (setq-local outline-level #'dialog-outline-level)
-  (setq-local outline-regexp (dialog-rx outline)))
+  (setq-local outline-regexp (dialog-rx outline))
+  (add-hook 'flymake-diagnostic-functions #'dialog-flymake nil t)
+  ;; Flymake is using source files rather than buffers.
+  (setq-local flymake-no-changes-timeout nil))
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.dg\\'" . dialog-mode))
