@@ -116,17 +116,20 @@
 ;; Note: The order of the files in the `dialog-game-files' list is significant
 ;; in the same way it is when compiling or manually running the debug program.
 
-;; The game file names are expanded relative to the current project root as
-;; determined by `project'.  If the game source code is being version controlled
-;; it is likely that no further configuration will be required, in other cases
-;; it may be required to find another way to identify the project root.  One way
-;; to do this is by using the standard library file name as project root marker:
+;; The game file names should be specified as relative to the current project
+;; root as determined by `project'.  If the game source code is being version
+;; controlled it is likely that no further configuration will be required, in
+;; other cases it may be required to find another way to identify the project
+;; root.  One way to do this is by using the standard library file name as
+;; project root marker:
 
 ;;   (require 'project)
 ;;   (add-to-list 'project-vc-extra-root-markers "stdlib.dg")
 
-;; If the project root cannot be determined the game file names are expanded
-;; relative to the current directory.
+;; If the project root cannot be determined the current working directory is
+;; used instead.  This is likely to be less reliable and limits some
+;; functionality to buffers which also happen to have the correct working
+;; directory.
 
 ;; For an equivalent of hot-reload, the function `dialog-debug-send-command'
 ;; will default to sending "@replay" to the debug process after the default
@@ -971,12 +974,12 @@ with no further process control."
 
 The value of `dialog-game-files' determines which files are loaded by
 the debug program.  If the value is nil a prompt will appear to specify
-which game files should be loaded.  Filenames are expanded relative to
-the project root, as determined by `project-root'.  If the project root
-cannot be determined the value of `default-directory' will be used in
-its place.  When called with a single prefix argument PROMPT, always
-prompt for the game files.  When called with a double prefix argument,
-always prompt for the project root and the game files.
+which game files should be loaded.  Filenames should be specified
+relative to the project root, as determined by `project-root'.  If the
+project root cannot be determined the value of `default-directory' will
+be used in its place.  When called with a single prefix argument PROMPT,
+always prompt for the game files.  When called with a double prefix
+argument, always prompt for the project root and the game files.
 
 If `dialog-debug-as-interp' is nil the debug program is started with no
 further process control and no associated buffer, otherwise it will be
@@ -1000,25 +1003,35 @@ displayed if it exists."
              ;; Force a prompt for the game directory with a double prefix
              ;; argument.  Fallback to the current directory if there is no
              ;; project.
-             (default-directory (if (equal prompt '(16))
-                                    (read-directory-name
-                                     "Game directory: " nil nil t)
-                                  (if-let* ((project (project-current)))
-                                      (project-root project)
-                                    default-directory)))
+             (game-directory (if (equal prompt '(16))
+                                 (read-directory-name
+                                  "Game directory: " nil nil t)
+                               (if-let* ((project (project-current)))
+                                   (project-root project)
+                                 default-directory)))
              ;; Prompt for game files if none are defined or if there was a
              ;; prefix argument.
-             (game-files (mapcar #'expand-file-name
-                                 (or (and (not prompt) dialog-game-files)
-                                     (completing-read-multiple
-                                      "Game files: "
-                                      #'completion-file-name-table)))))
-        (if dialog-debug-as-interp
-            (apply #'make-comint-in-buffer
-                   program-basename buffer program nil game-files)
-          (message "Starting debug program")
-          (apply #'start-process
-                 program-basename buffer program game-files))))
+             (game-files (or (and (not prompt) dialog-game-files)
+                             (mapcar (lambda (file)
+                                       (if (file-name-absolute-p file)
+                                           ;; Expand ~ in absolute names.
+                                           (expand-file-name file)
+                                         ;; Keep relative names.
+                                         file))
+                                     (let ((default-directory game-directory))
+                                       (completing-read-multiple
+                                        "Game files: "
+                                        #'completion-file-name-table))))))
+        (cond (dialog-debug-as-interp
+               (with-current-buffer buffer
+                 (setq default-directory game-directory))
+               (apply #'make-comint-in-buffer
+                      program-basename buffer program nil game-files))
+              (t
+               (message "Starting debug program")
+               (let ((default-directory game-directory))
+                 (apply #'start-process
+                        program-basename buffer program game-files))))))
     (when buffer
       (pop-to-buffer buffer))))
 

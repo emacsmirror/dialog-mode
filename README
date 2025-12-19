@@ -83,17 +83,20 @@ files in Emacs is a comma.
 Note: The order of the files in the `dialog-game-files' list is significant
 in the same way it is when compiling or manually running the debug program.
 
-The game file names are expanded relative to the current project root as
-determined by `project'.  If the game source code is being version controlled
-it is likely that no further configuration will be required, in other cases
-it may be required to find another way to identify the project root.  One way
-to do this is by using the standard library file name as project root marker:
+The game file names should be specified as relative to the current project
+root as determined by `project'.  If the game source code is being version
+controlled it is likely that no further configuration will be required, in
+other cases it may be required to find another way to identify the project
+root.  One way to do this is by using the standard library file name as
+project root marker:
 
   (require 'project)
   (add-to-list 'project-vc-extra-root-markers "stdlib.dg")
 
-If the project root cannot be determined the game file names are expanded
-relative to the current directory.
+If the project root cannot be determined the current working directory is
+used instead.  This is likely to be less reliable and limits some
+functionality to buffers which also happen to have the correct working
+directory.
 
 For an equivalent of hot-reload, the function `dialog-debug-send-command'
 will default to sending "@replay" to the debug process after the default
