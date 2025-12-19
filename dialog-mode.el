@@ -211,6 +211,7 @@
 
 (require 'align)
 (require 'comint)
+(require 'flymake)
 (require 'imenu)
 (require 'project)
 (eval-when-compile
@@ -1194,6 +1195,23 @@ If JUSTIFY is non-nil, justify as well."
   "Specifies the name of the Dialog compiler executable."
   :type 'string)
 
+(defun dialog--clear-flymake-diagnostics ()
+  "Delete all global list-only diagnostics which relate to this project.
+
+Verify that the diagnostics originated from this Flymake backend by
+checking for diagnostic data which was added as an identifier."
+  (let ((project-directory (dialog--project-directory)))
+    (setq flymake-list-only-diagnostics
+          (cl-loop for (file . diags) in flymake-list-only-diagnostics
+                   when (file-in-directory-p file project-directory)
+                   do (setq diags
+                            (cl-loop
+                             for diag in diags
+                             unless (eq (flymake-diagnostic-data diag) 'dialogc)
+                             collect diag))
+                   when diags
+                   collect (cons file diags)))))
+
 (defun dialog--make-flymake-command ()
   "Return the list of strings to run the Flymake process."
   (append (list dialog-compiler-program
@@ -1241,21 +1259,38 @@ REPORT-FN is Flymake's callback function."
                            (eq proc dialog--flymake-proc))
                          (with-current-buffer (process-buffer proc)
                            (goto-char (point-min))
-                           (cl-loop
-                            while (search-forward-regexp
-                                   dialog-error-regexp nil t)
-                            for type = (pcase (match-string 1)
-                                         ("Error"   :error)
-                                         ("Warning" :warning)
-                                         (_         :note))
-                            for filename = (match-string 2)
-                            for beg = (cons
-                                       (string-to-number (match-string 3)) 0)
-                            for msg = (match-string 4)
-                            collect (flymake-make-diagnostic
-                                     filename beg nil type msg)
-                            into diags
-                            finally (funcall report-fn diags)))
+                           (let ((ht (make-hash-table :test #'equal))
+                                 (source-file (buffer-file-name source-buffer))
+                                 source-diags)
+                             ;; Push all diagnostics into a hash table to group
+                             ;; them by filename.
+                             (cl-loop
+                              while (search-forward-regexp
+                                     dialog-error-regexp nil t)
+                              for type = (pcase (match-string 1)
+                                           ("Error"   :error)
+                                           ("Warning" :warning)
+                                           (_         :note))
+                              for filename = (match-string 2)
+                              for beg = (cons
+                                         (string-to-number (match-string 3)) 0)
+                              for msg = (match-string 4)
+                              for diag = (flymake-make-diagnostic
+                                          filename beg nil type msg
+                                          'dialogc)
+                              do (push diag (gethash filename ht)))
+                             ;; Add all but the diagnostics for the source
+                             ;; buffer as list-only diagnostics.
+                             (dialog--clear-flymake-diagnostics)
+                             (maphash
+                              (lambda (file diags)
+                                (if (and source-file
+                                         (file-equal-p file source-file))
+                                    (setq source-diags diags)
+                                  (push (cons (expand-file-name file) diags)
+                                        flymake-list-only-diagnostics)))
+                              ht)
+                             (funcall report-fn source-diags)))
                        (flymake-log :warning "Canceling obsolete check %s"
                                     proc))
                    (kill-buffer (process-buffer proc))))))))))
