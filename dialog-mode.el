@@ -1245,6 +1245,11 @@ REPORT-FN is Flymake's callback function."
     (kill-process dialog--flymake-proc))
   (let ((default-directory (dialog--project-directory))
         (source-buffer (current-buffer)))
+    (if dialog-game-files
+        (dolist (file dialog-game-files)
+          (unless (file-exists-p file)
+            (flymake-log :warning "Game file '%s' does not exist" file)))
+      (flymake-log :warning "No game files are configured"))
     (save-restriction
       (widen)
       (setq dialog--flymake-proc
