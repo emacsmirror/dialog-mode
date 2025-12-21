@@ -1235,6 +1235,12 @@ checking for diagnostic data which was added as an identifier."
       line-end)
   "A regexp pattern which matches error output from the Dialog compiler.")
 
+;; Configure additional diagnostic symbols for "Debug" and "Info" messages.
+(put :dialog-debug 'flymake-category 'flymake-note)
+(put :dialog-debug 'flymake-type-name "debug")
+(put :dialog-info 'flymake-category 'flymake-note)
+(put :dialog-info 'flymake-type-name "info")
+
 (defun dialog-flymake (report-fn &rest _args)
   "Flymake backend for Dialog.
 
@@ -1276,7 +1282,9 @@ REPORT-FN is Flymake's callback function."
                               while (search-forward-regexp
                                      dialog-error-regexp nil t)
                               for type = (pcase (match-string 1)
+                                           ("Debug"   :dialog-debug)
                                            ("Error"   :error)
+                                           ("Info"    :dialog-info)
                                            ("Warning" :warning)
                                            (_         :note))
                               for filename = (match-string 2)
