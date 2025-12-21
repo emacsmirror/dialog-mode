@@ -211,7 +211,6 @@
 
 (require 'align)
 (require 'comint)
-(require 'flymake)
 (require 'imenu)
 (require 'project)
 (eval-when-compile
@@ -1194,6 +1193,10 @@ If JUSTIFY is non-nil, justify as well."
 (defcustom dialog-compiler-program "dialogc"
   "Specifies the name of the Dialog compiler executable."
   :type 'string)
+
+;; Prevent byte-compiler warnings when Flymake is not loaded.
+(declare-function flymake-diagnostic-data "flymake" (diag))
+(defvar flymake-list-only-diagnostics)
 
 (defun dialog--clear-flymake-diagnostics ()
   "Delete all global list-only diagnostics which relate to this project.
