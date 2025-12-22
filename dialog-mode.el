@@ -332,6 +332,7 @@
   "Extended version of `rx' for translation of form REGEXPS."
   `(rx-let ((block-syntax
              (seq (or line-start (not ?\\))
+                  (0+ ?\\ ?\\)
                   ?\(
                   (group
                    (or "or"
