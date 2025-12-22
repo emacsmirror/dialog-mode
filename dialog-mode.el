@@ -404,6 +404,12 @@ variables.")
 
 ;;;; Utility
 
+(defun dialog--paren-depth (&optional ppss)
+  "Return the current parentheses depth.
+
+Prefer existing parser state PPSS over calling `syntax-ppss'."
+  (car (or ppss (syntax-ppss))))
+
 (defun dialog--start-of-comment-or-string (&optional ppss)
   "Return the starting position of the comment or string at point.
 
@@ -419,6 +425,26 @@ existing parser state PPSS over calling `syntax-ppss'."
   (if-let* ((project (project-current)))
       (project-root project)
     default-directory))
+
+(defun dialog--rule-uses-topic-p ()
+  "Return a non-nil value when the rule at point uses a topic."
+  (save-excursion
+    (when (or
+           ;; Move out of a comment or string.
+           (and-let* ((start (dialog--start-of-comment-or-string)))
+             (goto-char start))
+           ;; Check if already looking at a rule-head.
+           (not (looking-at-p (dialog-rx rule-head-start))))
+      (dialog-beginning-of-defun))
+    ;; Search for an unescaped * in rule-head or body.
+    (let ((bound (save-excursion
+                   (dialog-end-of-defun)
+                   (point))))
+      (cl-loop while (re-search-forward (rx (not ?\\) (0+ ?\\ ?\\) ?*) bound t)
+               for ppss = (syntax-ppss)
+               unless (dialog--in-comment-or-string-p ppss)
+               when (cl-plusp (dialog--paren-depth ppss))
+               return t))))
 
 ;;;; Special statement parser
 
@@ -1340,11 +1366,8 @@ REPORT-FN is Flymake's callback function."
             (let ((rule-head (buffer-substring-no-properties
                               (match-beginning 0) (point))))
               (push
-               ;; Prepend the topic if there is one and the rule-head
-               ;; includes an asterisk.
-               ;; TODO: Find a fast way to check that the * is actually in the
-               ;; rule head and not trailing it.
-               (cons (if (and topic (string-search "*" rule-head))
+               ;; Prepend the topic if there is one and the rule uses it.
+               (cons (if (and topic (dialog--rule-uses-topic-p))
                          (concat topic dialog-imenu-topic-separator rule-head)
                        rule-head)
                      (if imenu-use-markers
@@ -1352,7 +1375,7 @@ REPORT-FN is Flymake's callback function."
                        (point)))
                index))
             ;; Don't re-match the previous match.
-            (end-of-line))))
+            (dialog-end-of-defun))))
         (nreverse index)))))
 
 ;;;; Outline mode

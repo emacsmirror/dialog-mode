@@ -471,5 +471,120 @@ Ignore comments and strings that look like rule-heads."
 "
     (goto-char (1+ (point-min)))
     (align-current)))
+
+;;;; Topic usage check
+
+(ert-deftest dialog-uses-topic-in-rule-head ()
+  "Look for use of a topic in a rule-head."
+  (dialog-mode-tests--with-temp-buffer
+      "(head *)"
+    (goto-char (point-min))
+    (should (dialog--rule-uses-topic-p))))
+
+(ert-deftest dialog-uses-topic-in-rule-body ()
+  "Look for use of a topic in a rule's body."
+  (dialog-mode-tests--with-temp-buffer
+      "(head)
+	(body *)"
+    (goto-char (point-min))
+    (should (dialog--rule-uses-topic-p))))
+
+(ert-deftest dialog-uses-topic-in-trailing-rule-body ()
+  "Look for use of a topic in a rule's trailing body."
+  (dialog-mode-tests--with-temp-buffer
+      "(head)	(body *)"
+    (goto-char (point-min))
+    (should (dialog--rule-uses-topic-p))))
+
+(ert-deftest dialog-uses-topic-ignore-trailing-comments ()
+  "Look for use of a topic in a rule's body.
+
+Ignore trailing comments."
+  (dialog-mode-tests--with-temp-buffer
+      "(head)	%% (body *)"
+    (goto-char (point-min))
+    (should-not (dialog--rule-uses-topic-p))))
+
+(ert-deftest dialog-uses-topic-ignore-trailing-strings ()
+  "Look for use of a topic in a rule's body.
+
+Ignore trailing strings."
+  (dialog-mode-tests--with-temp-buffer
+      "(head)	\"*\""
+    (goto-char (point-min))
+    (should-not (dialog--rule-uses-topic-p))))
+
+(ert-deftest dialog-uses-topic-in-rule-body-ignore-comments ()
+  "Look for use of a topic in a rule's body.
+
+Ignore comments."
+  (dialog-mode-tests--with-temp-buffer
+      "(head)
+	%% (body *)"
+    (goto-char (point-min))
+    (should-not (dialog--rule-uses-topic-p))))
+
+(ert-deftest dialog-uses-topic-in-rule-body-ignore-strings ()
+  "Look for use of a topic in a rule's body.
+
+Ignore strings."
+  (dialog-mode-tests--with-temp-buffer
+      "(head)
+	(body \"*\")"
+    (goto-char (point-min))
+    (should-not (dialog--rule-uses-topic-p))))
+
+(ert-deftest dialog-uses-topic-in-rule-ignore-top-level ()
+  "Look for use of a topic in a rule's body.
+
+Ignore the top-level."
+  (dialog-mode-tests--with-temp-buffer
+      "(head)	*
+	*"
+    (goto-char (point-min))
+    (should-not (dialog--rule-uses-topic-p))))
+
+(ert-deftest dialog-uses-topic-in-rule-ignore-escaped ()
+  "Look for use of a topic in a rule's body.
+
+Ignore escaped asterisks."
+  (dialog-mode-tests--with-temp-buffer
+      "
+(head)	(body \\*)
+(head)	(body \\\\\\*)
+(head)	(body \\\\\\\\\\*)"
+    (goto-char (1+ (point-min)))
+    (should-not (dialog--rule-uses-topic-p))
+    (forward-line)
+    (should-not (dialog--rule-uses-topic-p))
+    (forward-line)
+    (should-not (dialog--rule-uses-topic-p))))
+
+(ert-deftest dialog-uses-topic-in-rule-double-escaped ()
+  "Look for use of a topic in a rule's body.
+
+Match when the escape character is escaped."
+  (dialog-mode-tests--with-temp-buffer
+      "
+(head)	(body \\\\*)
+(head)	(body \\\\\\\\\\\\*)
+(head)	(body \\\\\\\\\\\\\\\\\\\\*)"
+    (goto-char (1+ (point-min)))
+    (should (dialog--rule-uses-topic-p))
+    (forward-line)
+    (should (dialog--rule-uses-topic-p))
+    (forward-line)
+    (should (dialog--rule-uses-topic-p))))
+
+(ert-deftest dialog-uses-topic-ignore-rule-in-string ()
+  "Look for use of a topic in a rule's body.
+
+Ignore a string that looks like a rule-head."
+  (dialog-mode-tests--with-temp-buffer
+      "\"
+(head *)\"
+	(body *)"
+    (goto-char (+ (point-min) 2))
+    (should-not (dialog--rule-uses-topic-p))))
 
 ;;; dialog-mode-tests.el ends here
