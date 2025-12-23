@@ -223,9 +223,7 @@ now equal to the string AFTER."
 (head1)
 %% (comment)
 (head2)
-	\"
-(string)
-\"
+
 (head3)
 "
     (beginning-of-defun)
@@ -259,9 +257,7 @@ now equal to the string AFTER."
 (head1)
 %% (comment)
 (head2)
-	\"
-(string)
-\"
+
 (head3)
 "
     (goto-char (point-min))
@@ -425,17 +421,15 @@ Ignore the rule bodies."
 "
     (align (point-min) (point-max))))
 
-(ert-deftest dialog-align-ignore-strings-and-comments ()
+(ert-deftest dialog-align-ignore-comments ()
   "Re-align syntax following rule-heads.
 
-Ignore comments and strings that look like rule-heads."
+Ignore comments that look like rule-heads."
   (dialog-mode-tests--buffer-changes
       "
 (head 1)(test)
 (head 2)   (test)
-\"
-(not head)(test)
-\"
+
 (head 3)	(test)
 ;; (not head)(test)
 (head 4) (test)
@@ -443,9 +437,7 @@ Ignore comments and strings that look like rule-heads."
       "
 (head 1)	(test)
 (head 2)	(test)
-\"
-(not head)(test)
-\"
+
 (head 3)	(test)
 ;; (not head)(test)
 (head 4)	(test)
@@ -505,15 +497,6 @@ Ignore trailing comments."
     (goto-char (point-min))
     (should-not (dialog--rule-uses-topic-p))))
 
-(ert-deftest dialog-uses-topic-ignore-trailing-strings ()
-  "Look for use of a topic in a rule's body.
-
-Ignore trailing strings."
-  (dialog-mode-tests--with-temp-buffer
-      "(head)	\"*\""
-    (goto-char (point-min))
-    (should-not (dialog--rule-uses-topic-p))))
-
 (ert-deftest dialog-uses-topic-in-rule-body-ignore-comments ()
   "Look for use of a topic in a rule's body.
 
@@ -521,16 +504,6 @@ Ignore comments."
   (dialog-mode-tests--with-temp-buffer
       "(head)
 	%% (body *)"
-    (goto-char (point-min))
-    (should-not (dialog--rule-uses-topic-p))))
-
-(ert-deftest dialog-uses-topic-in-rule-body-ignore-strings ()
-  "Look for use of a topic in a rule's body.
-
-Ignore strings."
-  (dialog-mode-tests--with-temp-buffer
-      "(head)
-	(body \"*\")"
     (goto-char (point-min))
     (should-not (dialog--rule-uses-topic-p))))
 
@@ -575,16 +548,5 @@ Match when the escape character is escaped."
     (should (dialog--rule-uses-topic-p))
     (forward-line)
     (should (dialog--rule-uses-topic-p))))
-
-(ert-deftest dialog-uses-topic-ignore-rule-in-string ()
-  "Look for use of a topic in a rule's body.
-
-Ignore a string that looks like a rule-head."
-  (dialog-mode-tests--with-temp-buffer
-      "\"
-(head *)\"
-	(body *)"
-    (goto-char (+ (point-min) 2))
-    (should-not (dialog--rule-uses-topic-p))))
 
 ;;; dialog-mode-tests.el ends here

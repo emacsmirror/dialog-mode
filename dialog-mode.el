@@ -307,6 +307,7 @@
     (modify-syntax-entry ?= "_" table)
     (modify-syntax-entry ?> "_" table)
     (modify-syntax-entry ?? "_" table)
+    (modify-syntax-entry ?\" "_" table)
     (modify-syntax-entry ?\; "_" table)
     (modify-syntax-entry ?^ "_" table)
     (modify-syntax-entry ?_ "_" table)
@@ -425,9 +426,6 @@ Return nil when point is outside of a comment or string.  Prefer
 existing parser state PPSS over calling `syntax-ppss'."
   (nth 8 (or ppss (syntax-ppss))))
 
-(defalias 'dialog--in-comment-or-string-p #'dialog--start-of-comment-or-string
-  "Return a non-nil value when inside a comment or string.")
-
 (defun dialog--project-directory ()
   "Return the current project directory or the current directory."
   (if-let* ((project (project-current)))
@@ -438,7 +436,7 @@ existing parser state PPSS over calling `syntax-ppss'."
   "Return a non-nil value when the rule at point references a topic."
   (save-excursion
     (when (or
-           ;; Move out of a comment or string.
+           ;; Move out of a comment.
            (and-let* ((start (dialog--start-of-comment-or-string)))
              (goto-char start))
            ;; Check if already looking at a rule-head.
@@ -450,7 +448,7 @@ existing parser state PPSS over calling `syntax-ppss'."
                    (point))))
       (cl-loop while (re-search-forward (rx (not ?\\) (0+ ?\\ ?\\) ?*) bound t)
                for ppss = (syntax-ppss)
-               unless (dialog--in-comment-or-string-p ppss)
+               unless (dialog--in-comment-p ppss)
                when (cl-plusp (dialog--paren-depth ppss))
                return t))))
 
@@ -628,8 +626,8 @@ of the statement."
               (char-equal ?\\ (char-syntax (char-before))))
          ;; Skip for escape sequence.
          nil)
-        ((dialog--in-comment-or-string-p)
-         ;; Skip for comments and strings.
+        ((dialog--in-comment-p)
+         ;; Skip for comments.
          nil)
         ((eq (point) list-start)
          ;; Inside a statement.  Return a struct which just represents the
@@ -742,7 +740,7 @@ nil."
       ;; Search for the argth rule-head in the given direction.
       (while (and (not (zerop arg))
                   (funcall search-fn (dialog-rx rule-head-start) nil t)
-                  (or (dialog--in-comment-or-string-p)
+                  (or (dialog--in-comment-p)
                       (setq arg (funcall inc-fn arg)
                             match-pos (line-beginning-position))))))
     (and match-pos (goto-char match-pos))))
@@ -949,7 +947,7 @@ the match or nil if there was no match."
          found new-pos)
     (save-excursion
       (while (and (funcall search-func (dialog-rx rule-head-start) bound t)
-                  (or (dialog--in-comment-or-string-p)
+                  (or (dialog--in-comment-p)
                       (not (setq found t)))))
       (when found
         ;; Move to the opening "(".
@@ -1360,12 +1358,12 @@ REPORT-FN is Flymake's callback function."
       (let (index topic)
         (while (re-search-forward (dialog-rx (or rule-head-start topic)) nil t)
           (cond
-           ((dialog--in-comment-or-string-p))
+           ((dialog--in-comment-p))
            ((eq (char-after (match-beginning 0)) ?#)
             (setq topic (match-string-no-properties 0)))
            (t
             (end-of-line)
-            ;; Move out of a comment or string.
+            ;; Move out of a comment.
             (when-let* ((start (dialog--start-of-comment-or-string)))
               (goto-char start))
             ;; Move backwards through whitespace.
