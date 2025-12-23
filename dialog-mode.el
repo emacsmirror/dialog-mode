@@ -435,7 +435,7 @@ existing parser state PPSS over calling `syntax-ppss'."
     default-directory))
 
 (defun dialog--rule-uses-topic-p ()
-  "Return a non-nil value when the rule at point uses a topic."
+  "Return a non-nil value when the rule at point references a topic."
   (save-excursion
     (when (or
            ;; Move out of a comment or string.
