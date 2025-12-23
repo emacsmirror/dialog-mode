@@ -406,6 +406,12 @@ variables.")
 
 ;;;; Utility
 
+(defun dialog--in-comment-p (&optional ppss)
+  "Return a non-nil value when inside a comment.
+
+Prefer existing parser state PPSS over calling `syntax-ppss'."
+  (nth 4 (or ppss (syntax-ppss))))
+
 (defun dialog--paren-depth (&optional ppss)
   "Return the current parentheses depth.
 
@@ -1204,8 +1210,8 @@ If JUSTIFY is non-nil, justify as well."
   (interactive "P")
   (save-excursion
     (end-of-line)
-    (if (dialog--in-comment-or-string-p)
-        ;; Use default fill for comments and strings.
+    (if (dialog--in-comment-p)
+        ;; Use default fill for comments.
         (fill-comment-paragraph justify)
       ;; Restrict the fill to the current line.
       ;; TODO: Find a safe way to identify a "paragraph".  It isn't obvious how
