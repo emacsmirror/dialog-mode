@@ -619,14 +619,12 @@ comment."
 The mandatory argument LIST-START is the opening position of a list when
 point is within list or nil otherwise.  SKIP-PREFIX should be a non-nil
 value when point needs to skip a prefix character to find the beginning
-of the statement."
+of the statement.
+
+The beginning of the statement is assumed to be unescaped."
   (when skip-prefix
     (dialog--forward-prefix-char))
-  (cond ((and (not (bobp))
-              (char-equal ?\\ (char-syntax (char-before))))
-         ;; Skip for escape sequence.
-         nil)
-        ((dialog--in-comment-p)
+  (cond ((dialog--in-comment-p)
          ;; Skip for comments.
          nil)
         ((eq (point) list-start)
@@ -670,7 +668,12 @@ prefering the opening \"(if)\" of an If statement over
           block
           block-end)
       (while (and (null block)
-                  (re-search-backward (rx (char ?\( ?\[ ?{)) nil t))
+                  ;; Match an unescaped statement opening.
+                  (re-search-backward (rx (or line-start (not ?\\))
+                                          (0+ ?\\ ?\\)
+                                          (group (char ?\( ?\[ ?{)))
+                                      nil t))
+        (goto-char (match-beginning 1))
         (when-let* ((statement (dialog--parse-statement list-start)))
           (cond ((looking-at-p (rx ?{ graphic)))  ; Ignore "tight bracing".
                 ((not (dialog-special-p statement))
