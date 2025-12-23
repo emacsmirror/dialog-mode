@@ -6,7 +6,7 @@ The following features are implemented:
 * Motion around and selection of rule definitions.
 * Align support for alignment of syntax following a rule-head.
 * Imenu support for rule-heads (including topic when relevant).
-* Outline Mode support for comments and topics.
+* Outline Mode support for comments, rule-heads, and topics.
 * Comint support for running the Dialog debugger.
 * Flymake support.
 

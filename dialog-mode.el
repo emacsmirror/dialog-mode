@@ -39,7 +39,7 @@
 ;; * Motion around and selection of rule definitions.
 ;; * Align support for alignment of syntax following a rule-head.
 ;; * Imenu support for rule-heads (including topic when relevant).
-;; * Outline Mode support for comments and topics.
+;; * Outline Mode support for comments, rule-heads, and topics.
 ;; * Comint support for running the Dialog debugger.
 ;; * Flymake support.
 
@@ -350,7 +350,8 @@
             (object
              (seq ?# (0+ user-chars)))
             (outline
-             (seq line-start (or topic
+             (seq line-start (or rule-head-line
+                                 topic
                                  (seq (>= 3 ?%)
                                       (1+ whitespace)
                                       (0+ not-newline)))))
@@ -1383,11 +1384,15 @@ REPORT-FN is Flymake's callback function."
 
 (defun dialog-outline-level ()
   "Return the depth for the current outline heading."
-  (if (eq (char-after) ?#)
-      most-positive-fixnum
-    (save-excursion
-      (forward-same-syntax)
-      (- (current-column) 2))))
+  (pcase (char-after)
+    ;; Topic.
+    (?# (1- most-positive-fixnum))
+    ;; Rule-head.
+    (?\( most-positive-fixnum)
+    ;; Comment.
+    (_ (save-excursion
+         (forward-same-syntax)
+         (- (current-column) 2)))))
 
 ;;;; Keymap
 
