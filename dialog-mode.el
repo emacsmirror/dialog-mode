@@ -1390,13 +1390,13 @@ REPORT-FN is Flymake's callback function."
 
 (defun dialog-outline-level ()
   "Return the depth for the current outline heading."
-  (pcase (char-after)
+  (cl-case (char-after)
     ;; Topic.
     (?# (1- most-positive-fixnum))
     ;; Rule-head.
     (?\( most-positive-fixnum)
     ;; Comment.
-    (_ (save-excursion
+    (t (save-excursion
          (forward-same-syntax)
          (- (current-column) 2)))))
 
