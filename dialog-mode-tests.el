@@ -47,6 +47,17 @@ now equal to the string AFTER."
 
 ;;;; Indentation for statements
 
+(ert-deftest dialog-indent-topic ()
+  "Do not modify indentation for topics."
+  (dialog-mode-tests--test-indentation
+   "%% Topic.
+#mytopic"))
+
+(ert-deftest dialog-indent-comment ()
+  "Do not modify indentation for comments."
+  (dialog-mode-tests--test-indentation
+   "%% My comment."))
+
 (ert-deftest dialog-indent-following-rule-head ()
   "Increase indentation level for statements following rule heads."
   (dialog-mode-tests--test-indentation
@@ -61,6 +72,18 @@ now equal to the string AFTER."
 (perform [about])
 	Please make sure to check out the (link resource @manual){printed
 	manual} that was bundled with the game."))
+
+(ert-deftest dialog-indent-tight-bracing-no-dedent ()
+  "Maintain indentation level where bracing touches statements.
+
+Do not dedent a line which begins with tight bracing."
+  (dialog-mode-tests--test-indentation
+   "%% Tight bracing.
+(perform [about])
+	Please make sure to check out the (link resource @manual){printed
+	manual
+	}
+	that was bundled with the game."))
 
 (ert-deftest dialog-indent-simple-disjunction ()
   "Maintain indentation level for simple disjunction."

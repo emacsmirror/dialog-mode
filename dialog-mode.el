@@ -296,6 +296,7 @@
     (modify-syntax-entry ?\n ">" table)
     ;; Set allowed symbol constituents.
     (modify-syntax-entry ?! "_" table)
+    (modify-syntax-entry ?# "_" table)
     (modify-syntax-entry ?$ "_" table)
     (modify-syntax-entry ?& "_" table)
     (modify-syntax-entry ?' "_" table)
@@ -314,7 +315,6 @@
     (modify-syntax-entry ?` "_" table)
     (modify-syntax-entry ?| "_" table)
     ;; Set expression prefixes.
-    (modify-syntax-entry ?# "'" table)
     (modify-syntax-entry ?* "'" table)
     (modify-syntax-entry ?@ "'" table)
     (modify-syntax-entry ?~ "'" table)
@@ -407,11 +407,23 @@ variables.")
 
 ;;;; Utility
 
+(defun dialog--forward-prefix-chars ()
+  "Move forwards over characters with prefix syntax."
+  (when (= (char-syntax (char-after)) ?')
+    (forward-same-syntax)))
+
 (defun dialog--in-comment-p (&optional ppss)
   "Return a non-nil value when inside a comment.
 
 Prefer existing parser state PPSS over calling `syntax-ppss'."
   (nth 4 (or ppss (syntax-ppss))))
+
+(defun dialog--list-start (&optional ppss)
+  "Return the buffer position which opens the list around point.
+
+Return nil if point is not within a list.  Prefer existing parser state
+PPSS over calling `syntax-ppss'."
+  (nth 1 (or ppss (syntax-ppss))))
 
 (defun dialog--paren-depth (&optional ppss)
   "Return the current parentheses depth.
@@ -455,52 +467,38 @@ existing parser state PPSS over calling `syntax-ppss'."
 ;;;; Special statement parser
 
 (cl-defstruct (dialog-block
-               (:constructor dialog-make-block
-                             (&key
-                              position
-                              prefix-char
-                              statement-type))
+               (:constructor dialog-make-block)
                (:copier nil))
-  "`position' records the buffer position which begins the dialog
+  "The `position' slot is the buffer position which begins the dialog
 statement.
 
-`prefix-char' is the optional prefix character which can appear before
-opening parentheses or braces, or nil when a prefix character was not
-present.
+The 'type' slot is a character which represents the opening character of
+the statement (ignoring any prefix characters).  Valid values are \"{\",
+\"[\", and \"(\"."
+  (position nil :type (natnum 0 *))
+  (type nil :type character))
 
-`statement-type' is a character which represents the statement, either
-\"{\", \"[\", or \"(\"."
-  position
-  prefix-char
-  statement-type)
-
-(cl-defstruct (dialog-special
+(cl-defstruct (dialog-statement
                (:include dialog-block)
-               (:constructor dialog-make-special
-                             (&key
-                              position
-                              prefix-char
-                              statement-list
-                              &aux
-                              (statement-type ?\()
-                              (statement-symbol
-                               (dialog--statement-token statement-list))))
+               (:constructor dialog-make-statement)
                (:copier nil))
-  "`statement-list' is a list which represents the parsed top-levels of a
-statement.
+  "The `symbol' slot is the symbol which represents the statement syntax
+when resolved as a syntax token.
 
-`statement-symbol' is the symbol which represents the value of statement
-when resolved to a syntax token."
-  statement-list
-  statement-symbol)
+The `syntax' slot is a list which represents the parsed top-level inside
+the statement."
+  (symbol nil :type symbol)
+  (syntax nil :type list))
 
-(cl-defgeneric dialog--opens-indent-p (block)
-  "Return whether BLOCK increases the indentation level.")
-
-(cl-defmethod dialog--opens-indent-p ((block dialog-special))
+(cl-defgeneric dialog--opens-block-p (block)
   "Return whether BLOCK increases the indentation level."
-  (memq (dialog-special-statement-symbol block)
-        '(dialog-if-t
+  (always block))
+
+(cl-defmethod dialog--opens-block-p ((block dialog-statement))
+  "Return whether BLOCK increases the indentation level."
+  (memq (dialog-statement-symbol block)
+        '(dialog-or-t
+          dialog-if-t
           dialog-then-t
           dialog-elseif-t
           dialog-else-t
@@ -510,13 +508,15 @@ when resolved to a syntax token."
           dialog-determine-t
           dialog-from-t)))
 
-(cl-defgeneric dialog--closes-indent-p (block)
-  "Return whether BLOCK decreases the indentation level.")
-
-(cl-defmethod dialog--closes-indent-p ((block dialog-special))
+(cl-defgeneric dialog--closes-block-p (block)
   "Return whether BLOCK decreases the indentation level."
-  (memq (dialog-special-statement-symbol block)
-        '(dialog-then-t
+  (ignore block))
+
+(cl-defmethod dialog--closes-block-p ((block dialog-statement))
+  "Return whether BLOCK decreases the indentation level."
+  (memq (dialog-statement-symbol block)
+        '(dialog-or-t
+          dialog-then-t
           dialog-elseif-t
           dialog-else-t
           dialog-endif-t
@@ -527,32 +527,18 @@ when resolved to a syntax token."
           dialog-from-t
           dialog-matching-t)))
 
-(defun dialog--rule-head-p (block)
+(cl-defgeneric dialog--rule-head-p (block)
+  "Return whether BLOCK is a rule-head."
+  (ignore block))
+
+(cl-defmethod dialog--rule-head-p ((block dialog-statement))
   "Return whether BLOCK is a rule-head."
   (save-excursion
-    (goto-char (dialog-block-position block))
-    (dialog--backward-prefix-char)
+    (goto-char (dialog-statement-position block))
+    (backward-prefix-chars)
     (zerop (current-column))))
 
-(defun dialog--backward-prefix-char ()
-  "Return the prefix character before point and move past it.
-
-If no prefix character is present, do nothing and return nil."
-  (and-let* ((char (char-before)))
-    (and (char-equal (char-syntax char) ?')
-         (progn (forward-char -1) t)
-         char)))
-
-(defun dialog--forward-prefix-char ()
-  "Return the prefix character after point and move past it.
-
-If no prefix character is present, do nothing and return nil."
-  (and-let* ((char (char-after)))
-    (and (char-equal (char-syntax char) ?')
-         (progn (forward-char) t)
-         char)))
-
-(defun dialog--parse-special-statement-list ()
+(defun dialog--parse-statement-syntax ()
   "Parse the inner contents of a special statement list.
 
 Assume that point is on unescaped opening parenthesis and outside of a
@@ -583,6 +569,8 @@ comment."
 (defun dialog--statement-token (statement)
   "Return the symbol representing the statement list STATEMENT."
   (pcase statement
+    ;; { ... (or) ... }
+    ('("or")     'dialog-or-t)
     ;; (if) ... (then) ... (elseif) ... (then) ... (else) ... (endif)
     ('("if")     'dialog-if-t)
     ('("then")   'dialog-then-t)
@@ -613,60 +601,57 @@ comment."
     ('("from" "words")           'dialog-from-t)
     (`("matching" "all" "of" ,_) 'dialog-matching-t)))
 
-(defun dialog--parse-statement (list-start &optional skip-prefix)
-  "Return a struct which represents the statement at point.
+(defun dialog--parse-block-at-point ()
+  "Return a struct which represents the block at point.
 
-The mandatory argument LIST-START is the opening position of a list when
-point is within list or nil otherwise.  SKIP-PREFIX should be a non-nil
-value when point needs to skip a prefix character to find the beginning
-of the statement.
-
-The beginning of the statement is assumed to be unescaped."
-  (when skip-prefix
-    (dialog--forward-prefix-char))
-  (cond ((dialog--in-comment-p)
-         ;; Skip for comments.
-         nil)
-        ((eq (point) list-start)
-         ;; Inside a statement.  Return a struct which just represents the
-         ;; statement opening.
-         (dialog-make-block
-          :position (point)
-          :statement-type (char-after)
-          :prefix-char (dialog--backward-prefix-char)))
-        ((eq (char-after) ?\()
-         ;; At top level.  Return a struct which represents the statement.
-         (dialog-make-special
-          :position (point)
-          :prefix-char (save-excursion
-                         (dialog--backward-prefix-char))
-          :statement-list (save-excursion
-                            (dialog--parse-special-statement-list))))))
+Return nil when point is not at the start of a block.  The beginning of
+the statement is assumed to be unescaped."
+  (and (not (dialog--in-comment-p))
+       (let ((type (char-after)))
+         (cl-case type
+           (?\[ (dialog-make-block
+                 :position (point)
+                 :type type))
+           (?\{ (dialog-make-block
+                 :position (point)
+                 :type type))
+           (?\( (let ((syntax (save-excursion
+                                (dialog--parse-statement-syntax))))
+                  (dialog-make-statement
+                   :position (point)
+                   :type type
+                   :symbol (dialog--statement-token syntax)
+                   :syntax syntax)))))))
 
 (defun dialog--parse-dominating-block ()
   "Scan backwards and return the dominant block state.
 
 A dominant block is one which opens a new indentatation level without
 closing the previous indentation level.  In practical terms this means
-prefering the opening \"(if)\" of an If statement over
-\"(else)\",\"(elseif)\", or \"(then)\" blocks."
+prefering the opening \"(if)\" of an If statement over \"(else)\",
+\"(elseif)\", or \"(then)\" blocks, and preferring the block that
+precedes an \"(or)\" block."
   (let* ((block (dialog--parse-block))
          (parent block))
-    (while (and (dialog-special-p parent)
-                (memq (dialog-special-statement-symbol parent)
-                      '(dialog-else-t dialog-elseif-t dialog-then-t))
+    (while (and (dialog-statement-p parent)
+                (memq (dialog-statement-symbol parent)
+                      '(dialog-else-t
+                        dialog-elseif-t
+                        dialog-or-t
+                        dialog-then-t))
                 (not (dialog--rule-head-p parent))
                 (setq parent (save-excursion
-                               (goto-char (dialog-special-position parent))
+                               (goto-char (dialog-statement-position parent))
                                (dialog--parse-block)))))
     (or parent block)))
 
 (defun dialog--parse-block ()
   "Scan backwards and return the current block state."
   (save-excursion
-    (let ((list-start (nth 1 (syntax-ppss)))
-          block
-          block-end)
+    (let* ((ppss (syntax-ppss))
+           (list-opening (dialog--list-start ppss))
+           (paren-depth (dialog--paren-depth ppss))
+           block block-end)
       (while (and (null block)
                   ;; Match an unescaped statement opening.
                   (re-search-backward (rx (or line-start (not ?\\))
@@ -674,18 +659,27 @@ prefering the opening \"(if)\" of an If statement over
                                           (group (char ?\( ?\[ ?{)))
                                       nil t))
         (goto-char (match-beginning 1))
-        (when-let* ((statement (dialog--parse-statement list-start)))
-          (cond ((looking-at-p (rx ?{ graphic)))  ; Ignore "tight bracing".
-                ((not (dialog-special-p statement))
-                 ;; Bump against list opening.
-                 (when (eq (dialog-block-position statement) list-start)
-                   (setq block statement)))
+        (when-let* ((statement (dialog--parse-block-at-point)))
+          (cond ((and list-opening (= (point) list-opening))
+                 ;; This is the block opening that matches the list start of the
+                 ;; original value of point.
+                 (setq block statement))
+                ((> (dialog--paren-depth) paren-depth)
+                 ;; Ignore a match in a deeper paren level.
+                 )
+                ((not (dialog-statement-p statement))
+                 ;; Ignore a block that opens with [ or {.
+                 )
                 ((dialog--rule-head-p statement)
                  (setq block statement))
-                ((dialog--opens-indent-p statement)
-                 (pcase (cons (dialog-special-statement-symbol statement)
+                ((dialog--opens-block-p statement)
+                 (pcase (cons (dialog-statement-symbol statement)
                               (car block-end))
+                   ;; Always match for an opening with no existing close.
                    (`(,_ . nil)
+                    (setq block statement))
+                   ;; Always match an opening "(or)".
+                   (`('dialog-or-t . ,_)
                     (setq block statement))
                    ;; Match statement pairs.
                    ((or '(dialog-if-t        . dialog-endif-t)
@@ -696,8 +690,8 @@ prefering the opening \"(if)\" of an If statement over
                         `(,(or 'dialog-accumulate-t 'dialog-collect-t)
                           . dialog-into-t))
                     (pop block-end))))
-                ((dialog--closes-indent-p statement)
-                 (push (dialog-special-statement-symbol statement)
+                ((dialog--closes-block-p statement)
+                 (push (dialog-statement-symbol statement)
                        block-end)))))
       block)))
 
@@ -757,34 +751,37 @@ nil."
 
 ;;;; Indentation
 
-(defun dialog--dedicated-line-p (block line)
-  "Return whether LINE in BLOCK is a dedicated line."
-  (and (or
-        ;; Inside a braced expression.
-        (eq (dialog-block-statement-type block) ?{)
-        ;; Inside a block defined by a special statement (non-nil token).
-        (and (dialog-special-p block)
-             (dialog-special-statement-symbol block)))
-       ;; Match "(or)".
-       (and (dialog-special-p line)
-            (equal (dialog-special-statement-list line) '("or")))
-       ;; Check there is nothing else preceding it on the same line.
-       (> (save-excursion
-            (goto-char (dialog-block-position line))
-            (line-beginning-position))
-          (save-excursion
-            (goto-char (dialog-block-position line))
-            (forward-comment (- (point)))
-            (point)))
-       ;; Check there is nothing else following it on the same line.
-       (< (save-excursion
-            (goto-char (dialog-block-position line))
-            (line-end-position))
-          (save-excursion
-            (goto-char (dialog-block-position line))
-            (forward-sexp)  ; Move forwards across the "(or)".
-            (forward-comment (point-max))
-            (point)))))
+(defun dialog--dedent-line-p (block line)
+  "Return whether LINE in BLOCK should have 1 level of indentation removed."
+  ;; TODO: What is matched here should be user configurable.
+  (or
+   ;; "Tight bracing" on the block opening, e.g. "{a".
+   (and (= (dialog-block-type block) ?\{)
+        (save-excursion
+          (goto-char (dialog-block-position block))
+          (looking-at-p (rx ?{ graphic))))
+   ;; An "(or") on its own line.
+   (and (dialog--opens-block-p block)
+        ;; Match "(or)".
+        (and (dialog-statement-p line)
+             (equal (dialog-statement-syntax line) '("or")))
+        ;; Check there is nothing else preceding it on the same line.
+        (> (save-excursion
+             (goto-char (dialog-block-position line))
+             (line-beginning-position))
+           (save-excursion
+             (goto-char (dialog-block-position line))
+             (forward-comment (- (point)))
+             (point)))
+        ;; Check there is nothing else following it on the same line.
+        (< (save-excursion
+             (goto-char (dialog-block-position line))
+             (line-end-position))
+           (save-excursion
+             (goto-char (dialog-block-position line))
+             (forward-sexp)  ; Move forwards across the "(or)".
+             (forward-comment (point-max))
+             (point))))))
 
 (defcustom dialog-indent-offset 8
   "Specifies the indentation offset applied by `dialog-indent-line'.
@@ -810,42 +807,41 @@ of indentation but a normally sized indent for subsequent levels."
 (defun dialog--new-indent ()
   "Return the calculated indentation level for the current line."
   (save-excursion
-    (let ((list-start (prog1
-                          (nth 1 (syntax-ppss))
-                        (back-to-indentation)))
-          (block-statement (dialog--parse-dominating-block)))
-      (if (not (dialog-block-p block-statement))
+    (back-to-indentation)
+    (let ((opening-block (dialog--parse-dominating-block))
+          (list-opening (dialog--list-start)))
+      (if (not (dialog-block-p opening-block))
           ;; If there is no block then this is the first statement in the file.
           0
         ;; Calculate new level.
         (let ((line-sticky (and (zerop (current-column))
                                 (/= (line-end-position) (point))))
-              (line-statement (dialog--parse-statement list-start t))
+              (line-block (dialog--parse-block-at-point))
               (new-level 0))
-          ;; Remove one level of indentation when the current line begins by
-          ;; closing one parenthesis level.
-          (when (memq (alist-get (char-after) '((?\) . ?\()
-                                                (?\] . ?\[)
-                                                (?}  . ?{)))
-                      dialog-indent-in-statement)
-            (cl-decf new-level))
-          ;; Move to the position where the current block was opened.
-          (goto-char (dialog-block-position block-statement))
-          (dialog--backward-prefix-char)
-          (cond ((zerop (current-column))
+          ;; Decrement indentation to match particular indentation styles.
+          (if (dialog--dedent-line-p opening-block line-block)
+              (cl-decf new-level)
+            ;; Otherwise, remove one level of indentation when the current line
+            ;; begins by closing one parenthesis level.
+            (when (memq (alist-get (char-after) '((?\) . ?\()
+                                                  (?\] . ?\[)
+                                                  (?\} . ?{)))
+                        dialog-indent-in-statement)
+              (cl-decf new-level)))
+          (cond ((dialog--rule-head-p opening-block)
                  ;; Increase indentation when the block opening is a rule-head,
                  ;; unless the line being indented starts in column zero and is
                  ;; not empty.
                  (unless line-sticky
                    (cl-incf new-level dialog-indent-initial-size)))
-                ((not (dialog-special-p block-statement))
-                 ;; Increase indentation inside a statement.
-                 (when (memq (dialog-block-statement-type block-statement)
+                ((eq list-opening (dialog-block-position opening-block))
+                 ;; Increase indentation when inside a statement.
+                 (when (memq (dialog-block-type opening-block)
                              dialog-indent-in-statement)
                    (cl-incf new-level)))
-                ((pcase (cons (dialog-special-statement-symbol block-statement)
-                              (and (dialog-special-p line-statement)
-                                   (dialog-special-statement-symbol line-statement)))
+                ((pcase (cons (dialog-statement-symbol opening-block)
+                              (and (dialog-statement-p line-block)
+                                   (dialog-statement-symbol line-block)))
                    ;; Avoid further pattern matches if there is no block open.
                    (`(nil . ,_))
                    ;; Avoid further pattern matches for a block open without a
@@ -877,11 +873,8 @@ of indentation but a normally sized indent for subsequent levels."
                    (_ t))
                  ;; Add indentation based on matching block tokens.
                  (cl-incf new-level)))
-          ;; Decrement indentation for special statements which are on their
-          ;; own line.
-          (when (and (dialog--dedicated-line-p block-statement line-statement)
-                     (cl-plusp new-level))
-            (cl-decf new-level))
+          ;; Move to the position where the current block was opened.
+          (goto-char (dialog-block-position opening-block))
           (max (+ (current-indentation) (* new-level dialog-indent-offset))
                0))))))
 
@@ -955,7 +948,7 @@ the match or nil if there was no match."
       (when found
         ;; Move to the opening "(".
         (beginning-of-line)
-        (dialog--forward-prefix-char)
+        (dialog--forward-prefix-chars)
         ;; Move across the sexp and look for a whitespace separator.
         (condition-case nil
             (progn
