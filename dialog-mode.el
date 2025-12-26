@@ -64,14 +64,15 @@
 ;;     Start the debugger as `comint' process and pop to its buffer.  If the
 ;;     process already exists, just pop to its buffer.
 
-;;   `fill-paragraph' {M-q}
-;;     Fill the current paragraph.  This is rebound to avoid calling
-;;     `prog-fill-reindent-defun' which wouldn't have the expected effect.
-
 ;; When using `fill-paragraph' the effects are currently restricted to the
 ;; current line.  This restriction is in place because general text and Dialog
 ;; syntax are likely both present on contiguous lines of varying length at the
 ;; same indentation level.  To fill multiple lines, select the region first.
+;; For Emacs 30 and newer, the default key-binding for {M-q} will call the
+;; function `prog-fill-reindent-defun' instead of `fill-paragraph'.  Calling
+;; `prog-fill-reindent-defun' will re-indent all lines within the current rule
+;; but it is recommended to revert the key-binding to call `fill-paragraph'
+;; instead, restoring the easier way to fill lines within the active region.
 
 ;; For source code which uses a double sized indent for the first level of
 ;; indentation, set the value of `dialog-indent-initial-size' to 2.
@@ -199,7 +200,9 @@
 ;;                 (indent-tabs-mode)
 ;;                 (setq fill-column 79)))
 ;;     ;; Bind a key for easier access to Imenu.
-;;     (define-key dialog-mode-map (kbd "C-c C-j") #'imenu))
+;;     (define-key dialog-mode-map (kbd "C-c C-j") #'imenu)
+;;     ;; Revert to the old key-binding for M-q.
+;;     (define-key dialog-mode-map (kbd "M-q") #'fill-paragraph))
 
 ;; If using Imenu or `which-function-mode' it will be beneficial to make sure
 ;; that the value of `imenu-auto-rescan' is set to t.
@@ -1403,9 +1406,6 @@ REPORT-FN is Flymake's callback function."
     (define-key map (kbd "C-c C-m") #'dialog-toggle-indent-and-newline)
     (define-key map (kbd "C-c C-u") #'dialog-up-block)
     (define-key map (kbd "C-c C-z") #'dialog-debug-run)
-    ;; Restore the previous key-binding for `fill-paragraph' since it doesn't
-    ;; currently make sense to call `prog-fill-reindent-defun'.
-    (define-key map (kbd "M-q") #'fill-paragraph)
     map))
 
 ;;;; Mode
