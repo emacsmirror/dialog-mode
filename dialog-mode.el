@@ -975,7 +975,6 @@ trailing syntax while still allowing the alignment to work across a
 region which contains such lines."
   (/= (match-end 0) (line-end-position)))
 
-(add-to-list 'align-dq-string-modes 'dialog-mode)
 (add-to-list 'align-open-comment-modes 'dialog-mode)
 
 ;;;; Comint
