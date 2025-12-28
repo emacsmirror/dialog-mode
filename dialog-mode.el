@@ -706,7 +706,8 @@ precedes an \"(or)\" block."
 A non-nil value indicates that block motion commands are permitted to
 push the previous location to the `mark-ring' when the value of point
 changes."
-  :type 'boolean)
+  :type 'boolean
+  :safe #'booleanp)
 
 (defun dialog-up-block ()
   "Move point to the opening of the current block."
@@ -791,21 +792,24 @@ nil."
 
 Lines determined to be within blocks are indented by this number of
 columns per block level."
-  :type 'integer)
+  :type 'integer
+  :safe #'integerp)
 
 (defcustom dialog-indent-in-statement (list ?\( ?\[ ?{)
   "Specifies which statement types have additional indentation applied.
 
 Statement types which match will have the indentation level of a
 multi-line body increased."
-  :type '(repeat character))
+  :type '(repeat character)
+  :safe (lambda (x) (not (memq nil (mapcar #'characterp x)))))
 
 (defcustom dialog-indent-initial-size 1
   "Specifies a multiplier used for the first level of indentation.
 
 Increasing this to 2 will give a double sized indent for the first level
 of indentation but a normally sized indent for subsequent levels."
-  :type 'integer)
+  :type 'integer
+  :safe #'integerp)
 
 (defun dialog--new-indent ()
   "Return the calculated indentation level for the current line."
@@ -1003,7 +1007,8 @@ A non-nil value will start the debug program using `comint' which
 enables interactive debugging and sending commands to the game as it is
 running.  A value of nil means that the process is launched directly
 with no further process control."
-  :type 'boolean)
+  :type 'boolean
+  :safe #'booleanp)
 
 ;;;###autoload
 (defun dialog-debug-run (&optional prompt)
@@ -1144,7 +1149,8 @@ prompt for the command to send instead of using the default."
 Sending responses is only relevant when the debug process is using a Pty
 and `dialog-debug-output-responder' has been added to the value
 `comint-output-filter-functions'.  See `dialog-debug-use-pty'."
-  :type 'boolean)
+  :type 'boolean
+  :safe #'booleanp)
 
 (defun dialog-debug-toggle-output-responder ()
   "Toggle the value of `dialog-debug-use-output-responder'."
@@ -1178,7 +1184,8 @@ traditional terminal and also signals that the filter function
 value of `comint-output-filter-functions' for the debug buffer.  This
 function allows \"[more]\" prompts to be dismissed automatically, see
 `dialog-debug-toggle-output-responder'."
-  :type 'boolean)
+  :type 'boolean
+  :safe #'booleanp)
 
 (define-derived-mode dialog-debug-mode comint-mode "DGDebug"
   "Major mode for running the Dialog interactive debugger.
@@ -1345,7 +1352,8 @@ REPORT-FN is Flymake's callback function."
 
 (defcustom dialog-imenu-topic-separator imenu-level-separator
   "Specifies the topic separator used for Imenu names."
-  :type 'string)
+  :type 'string
+  :safe #'stringp)
 
 (defun dialog--create-imenu-index ()
   "Build and return an Imenu index alist."
