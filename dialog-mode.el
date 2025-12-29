@@ -369,7 +369,7 @@
              (seq line-start ?# (group (1+ user-chars))))
             (user-chars
              (or (char alphanumeric)
-                 (char ?! ?% ?: ?< ?> ?_ ?`)))
+                 (char ?+ ?- ?< ?> ?_)))
             (variable
              (seq ?$ (0+ user-chars))))
      (rx ,@regexps)))
