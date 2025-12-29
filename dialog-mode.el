@@ -475,7 +475,7 @@ existing parser state PPSS over calling `syntax-ppss'."
   "The `position' slot is the buffer position which begins the dialog
 statement.
 
-The 'type' slot is a character which represents the opening character of
+The `type' slot is a character which represents the opening character of
 the statement (ignoring any prefix characters).  Valid values are \"{\",
 \"[\", and \"(\"."
   (position nil :type (natnum 0 *))
