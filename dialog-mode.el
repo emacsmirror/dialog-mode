@@ -350,7 +350,7 @@
              (seq ?@ (or (1+ (char alphanumeric ?-))
                          (seq ?\\ (char ?b ?d ?l ?n ?r ?s ?u)))))
             (escape-sequence
-             (seq ?\\ (char ?# ?$ ?* ?@ ?\[ ?\( ?\) ?\\ ?\] ?{ ?| ?} ?~)))
+             (seq ?\\ anychar))
             (object
              (seq ?# (0+ user-chars)))
             (outline
@@ -385,10 +385,10 @@ Highlights Dialog topics.")
 (defconst dialog-font-lock-keywords-2
   (append
    dialog-font-lock-keywords-1
-   `((,(dialog-rx object)            . dialog-object-name-face)
+   `((,(dialog-rx escape-sequence)   . dialog-escape-sequence-face)
+     (,(dialog-rx object)            . dialog-object-name-face)
      (,(dialog-rx dictionary-word)   . dialog-dictionary-word-face)
      (,(dialog-rx variable)          . dialog-variable-name-face)
-     (,(dialog-rx escape-sequence)   . dialog-escape-sequence-face)
      (,(dialog-rx special-character) . dialog-special-character-face)))
   "Font lock keywords for level 2 highlighting in Dialog mode.
 
