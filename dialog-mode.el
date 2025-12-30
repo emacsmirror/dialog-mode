@@ -125,8 +125,8 @@
 ;; root.  One way to do this is by using the standard library file name as
 ;; project root marker:
 
-;;   (require 'project)
-;;   (add-to-list 'project-vc-extra-root-markers "stdlib.dg")
+;;   (with-eval-after-load 'project
+;;     (add-to-list 'project-vc-extra-root-markers "stdlib.dg"))
 
 ;; If the project root cannot be determined the current working directory is
 ;; used instead.  This is likely to be less reliable and limits some
