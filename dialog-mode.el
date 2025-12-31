@@ -371,7 +371,7 @@
              (or (char alphanumeric)
                  (char ?+ ?- ?< ?> ?_)))
             (variable
-             (seq ?$ (0+ user-chars))))
+             (seq ?$ (1+ user-chars))))
      (rx ,@regexps)))
 
 ;;;; Font lock
