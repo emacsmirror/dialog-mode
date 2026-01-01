@@ -762,9 +762,10 @@ nil."
   (or
    ;; "Tight bracing" on the block opening, e.g. "{a".
    (and (= (dialog-block-type block) ?\{)
-        (save-excursion
-          (goto-char (dialog-block-position block))
-          (looking-at-p (rx ?{ graphic))))
+        (let ((inner-char (char-after (1+ (dialog-block-position block)))))
+          (or (null inner-char)
+              ;; Anything except endcomment (end of line) or whitespace syntax.
+              (not (memq (char-syntax inner-char) '(?> ? ))))))
    ;; An "(or") on its own line.
    (and (dialog--opens-block-p block)
         ;; Match "(or)".
