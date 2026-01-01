@@ -50,13 +50,14 @@ now equal to the string AFTER."
 (ert-deftest dialog-indent-topic ()
   "Do not modify indentation for topics."
   (dialog-mode-tests--test-indentation
-   "%% Topic.
+   "(rule head)
 #mytopic"))
 
 (ert-deftest dialog-indent-comment ()
   "Do not modify indentation for comments."
   (dialog-mode-tests--test-indentation
-   "%% My comment."))
+   "(rule head)
+%% My comment."))
 
 (ert-deftest dialog-indent-following-rule-head ()
   "Increase indentation level for statements following rule heads."
