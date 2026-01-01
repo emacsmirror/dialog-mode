@@ -412,8 +412,9 @@ variables.")
 
 (defun dialog--forward-prefix-chars ()
   "Move forwards over characters with prefix syntax."
-  (when (= (char-syntax (char-after)) ?')
-    (forward-same-syntax)))
+  (unless (eobp)
+    (when (= (char-syntax (char-after)) ?')
+      (forward-same-syntax))))
 
 (defun dialog--in-comment-p (&optional ppss)
   "Return a non-nil value when inside a comment.
