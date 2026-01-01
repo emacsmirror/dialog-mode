@@ -815,15 +815,12 @@ of indentation but a normally sized indent for subsequent levels."
   "Return the calculated indentation level for the current line."
   (save-excursion
     (back-to-indentation)
-    (let ((opening-block (dialog--parse-dominating-block))
-          (list-opening (dialog--list-start)))
-      (if (not (dialog-block-p opening-block))
-          ;; If there is no block then this is the first statement in the file.
-          0
+    (if-let* ((opening-block (dialog--parse-dominating-block)))
         ;; Calculate new level.
         (let ((line-sticky (and (zerop (current-column))
                                 (/= (line-end-position) (point))))
               (line-block (dialog--parse-block-at-point))
+              (list-opening (dialog--list-start))
               (new-level 0))
           ;; Decrement indentation to match particular indentation styles.
           (if (dialog--dedent-line-p opening-block line-block)
@@ -883,7 +880,9 @@ of indentation but a normally sized indent for subsequent levels."
           ;; Move to the position where the current block was opened.
           (goto-char (dialog-block-position opening-block))
           (max (+ (current-indentation) (* new-level dialog-indent-offset))
-               0))))))
+               0))
+      ;; If there is no block then this is the first statement in the file.
+      0)))
 
 (defun dialog-indent-line ()
   "Indent the current line to match the block level.
