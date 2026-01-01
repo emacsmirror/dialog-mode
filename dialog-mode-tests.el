@@ -59,6 +59,18 @@ now equal to the string AFTER."
    "(rule head)
 %% My comment."))
 
+(ert-deftest dialog-indent-rule-head-prefix-@ ()
+  "Do not modify indentation for rule-head prefix @."
+  (dialog-mode-tests--test-indentation
+   "(rule head)
+@($Obj is open)"))
+
+(ert-deftest dialog-indent-rule-head-prefix-~ ()
+  "Do not modify indentation for rule-head prefix ~."
+  (dialog-mode-tests--test-indentation
+   "(rule head)
+~(refuse [find $])"))
+
 (ert-deftest dialog-indent-following-rule-head ()
   "Increase indentation level for statements following rule heads."
   (dialog-mode-tests--test-indentation
