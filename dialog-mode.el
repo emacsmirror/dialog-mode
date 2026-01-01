@@ -819,7 +819,9 @@ of indentation but a normally sized indent for subsequent levels."
         ;; Calculate new level.
         (let ((line-sticky (and (zerop (current-column))
                                 (/= (line-end-position) (point))))
-              (line-block (dialog--parse-block-at-point))
+              (line-block (save-excursion
+                            (dialog--forward-prefix-chars)
+                            (dialog--parse-block-at-point)))
               (list-opening (dialog--list-start))
               (new-level 0))
           ;; Decrement indentation to match particular indentation styles.
