@@ -168,11 +168,14 @@ another method at your own risk:
 Basic configuration:
 
   (with-eval-after-load 'dialog-mode
-    ;; Match indentation and fill-column to the standard library.
+    ;; Configure indentation, fill-column, and page-delimiter to match the
+    ;; standard library.
     (add-hook 'dialog-mode-hook
               (lambda ()
                 (indent-tabs-mode)
-                (setq fill-column 79)))
+                (setq fill-column 79)
+                (setq-local page-delimiter
+                            (concat "^" (make-string fill-column ?%)))))
     ;; Bind a key for easier access to Imenu.
     (define-key dialog-mode-map (kbd "C-c C-j") #'imenu)
     ;; Revert to the old key-binding for M-q.
