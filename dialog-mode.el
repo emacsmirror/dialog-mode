@@ -362,7 +362,7 @@
             (escape-sequence
              (seq ?\\ anychar))
             (object
-             (seq ?# (0+ user-chars)))
+             (seq ?# (1+ user-chars)))
             (outline
              (seq line-start (or rule-head-line
                                  topic
