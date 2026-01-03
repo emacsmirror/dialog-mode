@@ -345,17 +345,13 @@
 (defmacro dialog-rx (&rest regexps)
   "Extended version of `rx' for translation of form REGEXPS."
   `(rx-let ((block-syntax
-             (seq (or line-start (not ?\\))
-                  (0+ ?\\ ?\\)
-                  ?\(
-                  (group
-                   (or "or"
-                       "if" "then" "elseif" "then" "else" "endif"
-                       "select" "stopping" "cycling" "at random"
-                       "purely at random" "then at random"
-                       "then purely at random"
-                       "accumulate" "collect" "into"
-                       "determine object" "from words" "matching all of"))))
+             (or "or"
+                 "if" "then" "elseif" "then" "else" "endif"
+                 "select" "stopping" "cycling" "at random"
+                 "purely at random" "then at random"
+                 "then purely at random"
+                 "accumulate" "collect" "into"
+                 "determine object" "from words" "matching all of"))
             (dictionary-word
              (seq ?@ (or (1+ (char alphanumeric ?-))
                          (seq ?\\ (char ?b ?d ?l ?n ?r ?s ?u)))))
@@ -377,6 +373,9 @@
              (char ?# ?$ ?@ ?~ ?* ?|))
             (topic
              (seq line-start ?# (group (1+ user-chars))))
+            (unescaped
+             (seq (or line-start (not ?\\))
+                  (0+ ?\\ ?\\)))
             (user-chars
              (or (char alphanumeric)
                  (char ?+ ?- ?< ?> ?_)))
@@ -395,9 +394,10 @@ Highlights Dialog topics.")
 (defconst dialog-font-lock-keywords-2
   (append
    dialog-font-lock-keywords-1
-   `((,(dialog-rx escape-sequence)   . dialog-escape-sequence-face)
+   `((,(dialog-rx unescaped (group dictionary-word))
+      (1 dialog-dictionary-word-face))
+     (,(dialog-rx escape-sequence)   . dialog-escape-sequence-face)
      (,(dialog-rx object)            . dialog-object-name-face)
-     (,(dialog-rx dictionary-word)   . dialog-dictionary-word-face)
      (,(dialog-rx variable)          . dialog-variable-name-face)
      (,(dialog-rx special-character) . dialog-special-character-face)))
   "Font lock keywords for level 2 highlighting in Dialog mode.
@@ -408,7 +408,8 @@ for dictionary words, objects, and variables.")
 (defconst dialog-font-lock-keywords-3
   (append
    dialog-font-lock-keywords-2
-   `((,(dialog-rx block-syntax) (1 dialog-special-block-face))))
+   `((,(dialog-rx unescaped ?\( (group block-syntax))
+      (1 dialog-special-block-face))))
   "Font lock keywords for level 3 highlighting in Dialog mode.
 
 Highlights selected Dialog special syntax, escape sequences, special
