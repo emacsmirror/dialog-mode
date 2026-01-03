@@ -959,27 +959,27 @@ the match or nil if there was no match."
          (bound-check-func (if forwards #'>= #'<=))
          (search-func (if forwards #'re-search-forward #'re-search-backward))
          found new-pos)
-    (save-excursion
-      (while (and (funcall bound-check-func bound (point))
-                  (funcall search-func (dialog-rx rule-head-start) bound t)
-                  (or (dialog--in-comment-p)
-                      (not (setq found t)))))
-      (when found
-        ;; Move to the opening "(".
-        (beginning-of-line)
-        (dialog--forward-prefix-chars)
-        ;; Move across the sexp and look for a whitespace separator.
-        (condition-case nil
-            (progn
-              (forward-sexp)
-              (and (re-search-forward
-                    (rx (group (0+ whitespace))) (line-end-position) t)
-                   (setq new-pos (if forwards
-                                     ;; Already at the end of the match.
-                                     (point)
-                                   ;; Move as if searching backwards.
-                                   (line-beginning-position)))))
-          (scan-error))))
+    (when (funcall bound-check-func bound (point))
+      (save-excursion
+        (while (and (funcall search-func (dialog-rx rule-head-start) bound t)
+                    (or (dialog--in-comment-p)
+                        (not (setq found t)))))
+        (when found
+          ;; Move to the opening "(".
+          (beginning-of-line)
+          (dialog--forward-prefix-chars)
+          ;; Move across the sexp and look for a whitespace separator.
+          (condition-case nil
+              (progn
+                (forward-sexp)
+                (and (re-search-forward
+                      (rx (group (0+ whitespace))) (line-end-position) t)
+                     (setq new-pos (if forwards
+                                       ;; Already at the end of the match.
+                                       (point)
+                                     ;; Move as if searching backwards.
+                                     (line-beginning-position)))))
+            (scan-error)))))
     (and new-pos (goto-char new-pos))))
 
 (defun dialog-align-rule-match-valid-p ()
