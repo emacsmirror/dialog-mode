@@ -119,6 +119,13 @@ the display of text styling, set the value of `dialog-debug-use-pty' to t and
 toggle automatic dismissal of "[more]" prompts with the command
 `dialog-debug-toggle-output-responder'.
 
+Any prompts which originate from the standard library are expected to be
+handled by extensions which are loaded during game development.  For example,
+to skip any yes/no prompts without waiting for input, define a new rule for
+the (yesno) predicate:
+
+  (yesno)	%% Automatically accept yes/no prompts.
+
 To run the debug program directly instead of as a command interpreter set the
 value `dialog-debug-as-interp' to nil.  This also defaults command sending to
 use the clipboard.  A value of nil is the default when using Microsoft
