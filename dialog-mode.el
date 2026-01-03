@@ -956,10 +956,12 @@ formats."
 Do not search beyond BOUND.  Return the buffer position for the end of
 the match or nil if there was no match."
   (let* ((forwards (cl-plusp bound))
+         (bound-check-func (if forwards #'>= #'<=))
          (search-func (if forwards #'re-search-forward #'re-search-backward))
          found new-pos)
     (save-excursion
-      (while (and (funcall search-func (dialog-rx rule-head-start) bound t)
+      (while (and (funcall bound-check-func bound (point))
+                  (funcall search-func (dialog-rx rule-head-start) bound t)
                   (or (dialog--in-comment-p)
                       (not (setq found t)))))
       (when found
