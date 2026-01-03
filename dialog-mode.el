@@ -1,6 +1,6 @@
 ;;; dialog-mode.el --- Major mode for editing Dialog files -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2023-2025 Morgan Willcock
+;; Copyright (C) 2023-2026 Morgan Willcock
 
 ;; Author: Morgan Willcock <morgan@ice9.digital>
 ;; Keywords: languages
