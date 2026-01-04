@@ -60,6 +60,9 @@
 %%      ^^^^^^^ ^^^^^^^^ dialog-object-name-face
         #object+ #object- #object< #object> #object_
 %%      ^^^^^^^^ ^^^^^^^^ ^^^^^^^^ ^^^^^^^^ ^^^^^^^^ dialog-object-name-face
+        \#object
+%%      ^^ dialog-escape-sequence-face
+%%        ^^^^^^ nil
 
 %%% Special characters
 
