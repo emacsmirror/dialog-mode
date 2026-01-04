@@ -42,6 +42,7 @@
 %%% Comments
 
         %% Single-line comment.
+%%      ^^ font-lock-comment-delimiter-face
 %%         ^^^^^^^^^^^^^^^^^^^^ font-lock-comment-face
 
 %%% Dictionary words
