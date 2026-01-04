@@ -473,7 +473,7 @@ existing parser state PPSS over calling `syntax-ppss'."
     (let ((bound (save-excursion
                    (dialog-end-of-defun)
                    (point))))
-      (cl-loop while (re-search-forward (rx (not ?\\) (0+ ?\\ ?\\) ?*) bound t)
+      (cl-loop while (re-search-forward (dialog-rx unescaped ?*) bound t)
                for ppss = (syntax-ppss)
                unless (dialog--in-comment-p ppss)
                when (cl-plusp (dialog--paren-depth ppss))
@@ -669,9 +669,8 @@ precedes an \"(or)\" block."
            block block-end)
       (while (and (null block)
                   ;; Match an unescaped statement opening.
-                  (re-search-backward (rx (or line-start (not ?\\))
-                                          (0+ ?\\ ?\\)
-                                          (group (char ?\( ?\[ ?{)))
+                  (re-search-backward (dialog-rx unescaped
+                                                 (group (char ?\( ?\[ ?{)))
                                       nil t))
         (goto-char (match-beginning 1))
         (when-let* ((statement (dialog--parse-block-at-point)))
