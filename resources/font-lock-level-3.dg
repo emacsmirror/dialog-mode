@@ -57,6 +57,14 @@
 
         \# \$ \@ \~ \* \| \\ \( \) \[ \] \{ \}
 %%      ^^ ^^ ^^ ^^ ^^ ^^ ^^ ^^ ^^ ^^ ^^ ^^ ^^ dialog-escape-sequence-face
+        \\# \\$ \\@ \\~ \\* \\| \\\ \\( \\) \\[ \\] \\{ \\}
+%%      ^^  ^^  ^^  ^^  ^^  ^^  ^^^ ^^  ^^  ^^  ^^  ^^  ^^ dialog-escape-sequence-face
+%%        ^   ^   ^   ^   ^   ^ dialog-special-character-face
+%%                                    ^   ^ dialog-paren-face
+%%                                            ^   ^ dialog-bracket-face
+%%                                                    ^   ^ dialog-brace-face
+        \\\# \\\$ \\\@ \\\~ \\\* \\\| \\\\ \\\( \\\) \\\[ \\\] \\\{ \\\}
+%%      ^^^^ ^^^^ ^^^^ ^^^^ ^^^^ ^^^^ ^^^^ ^^^^ ^^^^ ^^^^ ^^^^ ^^^^ ^^^^ dialog-escape-sequence-face
 
 %%% Object names
 
