@@ -48,6 +48,9 @@
 
         @word @\b @\d @\l @\n @\r @\s @\u
 %%      ^^^^^ ^^^ ^^^ ^^^ ^^^ ^^^ ^^^ ^^^ dialog-dictionary-word-face
+        \@var
+%%      ^^ dialog-escape-sequence-face
+%%        ^^^ nil
 
 %%% Escape sequences
 
