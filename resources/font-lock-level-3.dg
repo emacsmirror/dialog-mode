@@ -118,6 +118,10 @@
 %%                        ^^^^                                ^^^^^ dialog-variable-name-face
 %%      ^                     ^ ^          ^ ^                     ^ dialog-paren-face
 
+        \(or\)
+%%      ^^  ^^ dialog-escape-sequence-face
+%%        ^^   nil
+
 %%% Paired punctuation
 
         { } [ ] ( )
