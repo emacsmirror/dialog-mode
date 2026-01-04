@@ -165,6 +165,13 @@ another method at your own risk:
   (setq dialog-debug-send-command-function
         #'dialog-debug-send-command-with-ahk)
 
+The command `dialog-browse-manual' will open the online version of the Dialog
+manual using the default browser, or with a prefix argument using the
+secondary browser.  To open the manual using a different browser configure
+the value of `browse-url-handlers'; if configured to open via
+`eww-browse-url' it may be preferable to also configure the value of
+`eww-readable-urls'.
+
 Basic configuration:
 
   (with-eval-after-load 'dialog-mode

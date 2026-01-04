@@ -198,6 +198,13 @@
 ;;   (setq dialog-debug-send-command-function
 ;;         #'dialog-debug-send-command-with-ahk)
 
+;; The command `dialog-browse-manual' will open the online version of the Dialog
+;; manual using the default browser, or with a prefix argument using the
+;; secondary browser.  To open the manual using a different browser configure
+;; the value of `browse-url-handlers'; if configured to open via
+;; `eww-browse-url' it may be preferable to also configure the value of
+;; `eww-readable-urls'.
+
 ;; Basic configuration:
 
 ;;   (with-eval-after-load 'dialog-mode
@@ -223,6 +230,7 @@
 ;;; Code:
 
 (require 'align)
+(require 'browse-url)
 (require 'comint)
 (require 'imenu)
 (require 'project)
@@ -1238,6 +1246,24 @@ function allows \"[more]\" prompts to be dismissed automatically, see
   (when (setq-local process-connection-type dialog-debug-use-pty)
     (add-hook 'comint-output-filter-functions
               #'dialog-debug-output-responder 90 t)))
+
+;;;; Documentation look-up
+
+(defcustom dialog-manual-url "https://dialog-if.github.io/manual/"
+  "Specifies the URL of the Dialog manual."
+  :type 'string
+  :safe #'stringp)
+
+;;;###autoload
+(defun dialog-browse-manual (&optional secondary)
+  "Browse the online version of the Dialog manual.
+
+With prefix argument SECONDARY use the secondary browser instead of the
+default browser."
+  (interactive "P")
+  (if secondary
+      (funcall browse-url-secondary-browser-function dialog-manual-url)
+    (browse-url dialog-manual-url)))
 
 ;;;; Filling
 
