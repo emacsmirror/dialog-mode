@@ -6,4 +6,6 @@
                  (indent-tabs-mode . t)))
  (emacs-lisp-mode . ((fill-column . 80)
                      (indent-tabs-mode . nil)))
- (makefile-mode . ((fill-column . 80))))
+ (makefile-mode . ((fill-column . 80)))
+ ("resources"
+  . ((dialog-mode . ((indent-tabs-mode . nil))))))

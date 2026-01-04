@@ -584,5 +584,23 @@ Match when the escape character is escaped."
     (should (dialog--rule-uses-topic-p))
     (forward-line)
     (should (dialog--rule-uses-topic-p))))
+
+;;;; Font-lock
+
+(require 'ert-font-lock nil 'noerror)
+;; Prevent compilation warnings where there is no ert-font-lock.
+(eval-when-compile
+  (unless (functionp 'ert-font-lock-test-file)
+    (declare-function ert-font-lock-test-file nil)))
+
+(require 'ert-x)
+
+(ert-deftest dialog-font-lock-level-3 ()
+  "Test level 3 font-lock."
+  (skip-unless (featurep 'ert-font-lock))
+  (let ((font-lock-maximum-decoration '((dialog-mode . 3))))
+    (ert-font-lock-test-file
+     (ert-resource-file "font-lock-level-3.dg")
+     'dialog-mode)))
 
 ;;; dialog-mode-tests.el ends here

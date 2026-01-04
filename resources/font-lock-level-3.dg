@@ -1,0 +1,103 @@
+%%% Topics
+
+#topic
+%% <- dialog-topic-name-face
+%%^^^^ dialog-topic-name-face
+#topic2
+%% <- dialog-topic-name-face
+%%^^^^^ dialog-topic-name-face
+#topic+
+%% <- dialog-topic-name-face
+%%^^^^^ dialog-topic-name-face
+#topic-
+%% <- dialog-topic-name-face
+%%^^^^^ dialog-topic-name-face
+#topic<
+%% <- dialog-topic-name-face
+%%^^^^^ dialog-topic-name-face
+#topic>
+%% <- dialog-topic-name-face
+%%^^^^^ dialog-topic-name-face
+#topic_
+%% <- dialog-topic-name-face
+%%^^^^^ dialog-topic-name-face
+
+%%% Rule head
+
+(rule head)
+%% <- nil
+%%^^^ ^^^^^ nil
+
+@(rule head)
+%% <- dialog-special-character-face
+%%^^^^ ^^^^^ nil
+
+~(rule head)
+%% <- dialog-special-character-face
+%%^^^^ ^^^^^ nil
+
+%%% Comments
+
+        %% Single-line comment.
+%%         ^^^^^^^^^^^^^^^^^^^^ font-lock-comment-face
+
+%%% Dictionary words
+
+        @word @\b @\d @\l @\n @\r @\s @\u
+%%      ^^^^^ ^^^ ^^^ ^^^ ^^^ ^^^ ^^^ ^^^ dialog-dictionary-word-face
+
+%%% Escape sequences
+
+        \# \$ \@ \~ \* \| \\ \( \) \[ \] \{ \}
+%%      ^^ ^^ ^^ ^^ ^^ ^^ ^^ ^^ ^^ ^^ ^^ ^^ ^^ dialog-escape-sequence-face
+
+%%% Object names
+
+        #object #object2
+%%      ^^^^^^^ ^^^^^^^^ dialog-object-name-face
+        #object+ #object- #object< #object> #object_
+%%      ^^^^^^^^ ^^^^^^^^ ^^^^^^^^ ^^^^^^^^ ^^^^^^^^ dialog-object-name-face
+
+%%% Special characters
+
+        # $ @ ~ * |
+%%      ^ ^ ^ ^ ^ ^ dialog-special-character-face
+
+%%% Variables
+
+        $var $var2
+%%      ^^^^ ^^^^^ dialog-variable-name-face
+        $var+ $var- $var< $var> $var_
+%%      ^^^^^ ^^^^^ ^^^^^ ^^^^^ ^^^^^ dialog-variable-name-face
+
+%%% Special syntax
+
+        { (or) }
+%%         ^^ dialog-special-block-face
+        (if) (then) (elseif) (then) (else) (endif)
+%%       ^^   ^^^^   ^^^^^^   ^^^^   ^^^^   ^^^^^ dialog-special-block-face
+        (select) (or) (or) (stopping)
+%%       ^^^^^^   ^^   ^^   ^^^^^^^^ dialog-special-block-face
+        (select) (or) (or) (cycling)
+%%       ^^^^^^   ^^   ^^   ^^^^^^^ dialog-special-block-face
+        (select) (or) (or) (at random)
+%%       ^^^^^^   ^^   ^^   ^^ ^^^^^^ dialog-special-block-face
+        (select) (or) (or) (purely at random)
+%%       ^^^^^^   ^^   ^^   ^^^^^^ ^^ ^^^^^^ dialog-special-block-face
+        (select) (or) (or) (then at random)
+%%       ^^^^^^   ^^   ^^   ^^^^ ^^ ^^^^^^ dialog-special-block-face
+        (select) (or) (or) (then purely at random)
+%%       ^^^^^^   ^^   ^^   ^^^^ ^^^^^^ ^^ ^^^^^^  dialog-special-block-face
+        (accumulate $Element) (into $Sum)
+%%       ^^^^^^^^^^            ^^^^ dialog-special-block-face
+%%                  ^^^^^^^^        ^^^^ dialog-variable-name-face
+        (collect $Element) (into $List)
+%%       ^^^^^^^            ^^^^ dialog-special-block-face
+%%               ^^^^^^^^        ^^^^^ dialog-variable-name-face
+        (collect words) (into $List)
+%%       ^^^^^^^         ^^^^ dialog-special-block-face
+%%               ^^^^^ nil
+%%                            ^^^^^ dialog-variable-name-face
+        (determine object $Obj) (from words) (matching all of $List)
+%%       ^^^^^^^^^ ^^^^^^        ^^^^ ^^^^^   ^^^^^^^^ ^^^ ^^ dialog-special-block-face
+%%                        ^^^^                                ^^^^^ dialog-variable-name-face
