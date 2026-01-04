@@ -1,0 +1,148 @@
+%%% Topics
+
+#topic
+%% <- dialog-topic-name-face
+%%^^^^ dialog-topic-name-face
+#topic2
+%% <- dialog-topic-name-face
+%%^^^^^ dialog-topic-name-face
+#topic+
+%% <- dialog-topic-name-face
+%%^^^^^ dialog-topic-name-face
+#topic-
+%% <- dialog-topic-name-face
+%%^^^^^ dialog-topic-name-face
+#topic<
+%% <- dialog-topic-name-face
+%%^^^^^ dialog-topic-name-face
+#topic>
+%% <- dialog-topic-name-face
+%%^^^^^ dialog-topic-name-face
+#topic_
+%% <- dialog-topic-name-face
+%%^^^^^ dialog-topic-name-face
+
+%%% Rule head
+
+(rule head)
+%% <- nil
+%%^^^ ^^^^ nil
+%%        ^ nil
+
+@(rule head)
+%% <- nil
+%%^^^^ ^^^^ nil
+%%         ^ nil
+
+~(rule head)
+%% <- nil
+%%^^^^ ^^^^ nil
+%%         ^ nil
+
+%%% Comments
+
+        %% Single-line comment.
+%%      ^^ font-lock-comment-delimiter-face
+%%         ^^^^^^^^^^^^^^^^^^^^ font-lock-comment-face
+
+%%% Dictionary words
+
+        @word @\b @\d @\l @\n @\r @\s @\u
+%%      ^^^^^ ^^^ ^^^ ^^^ ^^^ ^^^ ^^^ ^^^ nil
+        \@var
+%%      ^^ nil
+%%        ^^^ nil
+
+%%% Escape sequences
+
+        \# \$ \@ \~ \* \| \\ \( \) \[ \] \{ \}
+%%      ^^ ^^ ^^ ^^ ^^ ^^ ^^ ^^ ^^ ^^ ^^ ^^ ^^ nil
+        \\# \\$ \\@ \\~ \\* \\| \\\ \\( \\) \\[ \\] \\{ \\}
+%%      ^^  ^^  ^^  ^^  ^^  ^^  ^^^ ^^  ^^  ^^  ^^  ^^  ^^ nil
+%%        ^   ^   ^   ^   ^   ^ nil
+%%                                    ^   ^ nil
+%%                                            ^   ^ nil
+%%                                                    ^   ^ nil
+        \\\# \\\$ \\\@ \\\~ \\\* \\\| \\\\ \\\( \\\) \\\[ \\\] \\\{ \\\}
+%%      ^^^^ ^^^^ ^^^^ ^^^^ ^^^^ ^^^^ ^^^^ ^^^^ ^^^^ ^^^^ ^^^^ ^^^^ ^^^^ nil
+
+%%% Object names
+
+        #object #object2
+%%      ^^^^^^^ ^^^^^^^^ nil
+        #object+ #object- #object< #object> #object_
+%%      ^^^^^^^^ ^^^^^^^^ ^^^^^^^^ ^^^^^^^^ ^^^^^^^^ nil
+        \#object
+%%      ^^ nil
+%%        ^^^^^^ nil
+
+%%% Special characters
+
+        # $ @ ~ * |
+%%      ^ ^ ^ ^ ^ ^ nil
+
+%%% Variables
+
+        $var $var2
+%%      ^^^^ ^^^^^ nil
+        $var+ $var- $var< $var> $var_
+%%      ^^^^^ ^^^^^ ^^^^^ ^^^^^ ^^^^^ nil
+        \$var
+%%      ^^ nil
+%%        ^^^ nil
+
+%%% Special syntax
+
+        { (or) }
+%%         ^^ nil
+%%      ^      ^ nil
+%%        ^  ^ nil
+        (if) (then) (elseif) (then) (else) (endif)
+%%       ^^   ^^^^   ^^^^^^   ^^^^   ^^^^   ^^^^^ nil
+%%      ^  ^ ^    ^ ^      ^ ^    ^ ^    ^ ^     ^ nil
+        (select) (or) (or) (stopping)
+%%       ^^^^^^   ^^   ^^   ^^^^^^^^ nil
+%%      ^      ^ ^  ^ ^  ^ ^        ^ nil
+        (select) (or) (or) (cycling)
+%%       ^^^^^^   ^^   ^^   ^^^^^^^ nil
+%%      ^      ^ ^  ^ ^  ^ ^       ^ nil
+        (select) (or) (or) (at random)
+%%       ^^^^^^   ^^   ^^   ^^ ^^^^^^ nil
+%%      ^      ^ ^  ^ ^  ^ ^         ^ nil
+        (select) (or) (or) (purely at random)
+%%       ^^^^^^   ^^   ^^   ^^^^^^ ^^ ^^^^^^ nil
+%%      ^      ^ ^  ^ ^  ^ ^                ^ nil
+        (select) (or) (or) (then at random)
+%%       ^^^^^^   ^^   ^^   ^^^^ ^^ ^^^^^^ nil
+%%      ^      ^ ^  ^ ^  ^ ^              ^ nil
+        (select) (or) (or) (then purely at random)
+%%       ^^^^^^   ^^   ^^   ^^^^ ^^^^^^ ^^ ^^^^^^  nil
+%%      ^      ^ ^  ^ ^  ^ ^                     ^ nil
+        (accumulate $Element) (into $Sum)
+%%       ^^^^^^^^^^            ^^^^ nil
+%%                  ^^^^^^^^        ^^^^ nil
+%%      ^                   ^ ^         ^ nil
+        (collect $Element) (into $List)
+%%       ^^^^^^^            ^^^^ nil
+%%               ^^^^^^^^        ^^^^^ nil
+%%      ^                ^ ^          ^ nil
+        (collect words) (into $List)
+%%       ^^^^^^^         ^^^^ nil
+%%               ^^^^^ nil
+%%                            ^^^^^ nil
+%%      ^             ^ ^          ^ nil
+        (determine object $Obj) (from words) (matching all of $List)
+%%       ^^^^^^^^^ ^^^^^^        ^^^^ ^^^^^   ^^^^^^^^ ^^^ ^^ nil
+%%                        ^^^^                                ^^^^^ nil
+%%      ^                     ^ ^          ^ ^                     ^ nil
+
+        \(or\)
+%%      ^^  ^^ nil
+%%        ^^   nil
+
+%%% Paired punctuation
+
+        { } [ ] ( )
+%%      ^ ^ nil
+%%          ^ ^ nil
+%%              ^ ^ nil

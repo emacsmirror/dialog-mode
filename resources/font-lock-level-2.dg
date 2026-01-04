@@ -1,0 +1,148 @@
+%%% Topics
+
+#topic
+%% <- dialog-topic-name-face
+%%^^^^ dialog-topic-name-face
+#topic2
+%% <- dialog-topic-name-face
+%%^^^^^ dialog-topic-name-face
+#topic+
+%% <- dialog-topic-name-face
+%%^^^^^ dialog-topic-name-face
+#topic-
+%% <- dialog-topic-name-face
+%%^^^^^ dialog-topic-name-face
+#topic<
+%% <- dialog-topic-name-face
+%%^^^^^ dialog-topic-name-face
+#topic>
+%% <- dialog-topic-name-face
+%%^^^^^ dialog-topic-name-face
+#topic_
+%% <- dialog-topic-name-face
+%%^^^^^ dialog-topic-name-face
+
+%%% Rule head
+
+(rule head)
+%% <- nil
+%%^^^ ^^^^ nil
+%%        ^ nil
+
+@(rule head)
+%% <- dialog-special-character-face
+%%^^^^ ^^^^ nil
+%%         ^ nil
+
+~(rule head)
+%% <- dialog-special-character-face
+%%^^^^ ^^^^ nil
+%%         ^ nil
+
+%%% Comments
+
+        %% Single-line comment.
+%%      ^^ font-lock-comment-delimiter-face
+%%         ^^^^^^^^^^^^^^^^^^^^ font-lock-comment-face
+
+%%% Dictionary words
+
+        @word @\b @\d @\l @\n @\r @\s @\u
+%%      ^^^^^ ^^^ ^^^ ^^^ ^^^ ^^^ ^^^ ^^^ dialog-dictionary-word-face
+        \@var
+%%      ^^ dialog-escape-sequence-face
+%%        ^^^ nil
+
+%%% Escape sequences
+
+        \# \$ \@ \~ \* \| \\ \( \) \[ \] \{ \}
+%%      ^^ ^^ ^^ ^^ ^^ ^^ ^^ ^^ ^^ ^^ ^^ ^^ ^^ dialog-escape-sequence-face
+        \\# \\$ \\@ \\~ \\* \\| \\\ \\( \\) \\[ \\] \\{ \\}
+%%      ^^  ^^  ^^  ^^  ^^  ^^  ^^^ ^^  ^^  ^^  ^^  ^^  ^^ dialog-escape-sequence-face
+%%        ^   ^   ^   ^   ^   ^ dialog-special-character-face
+%%                                    ^   ^ nil
+%%                                            ^   ^ nil
+%%                                                    ^   ^ nil
+        \\\# \\\$ \\\@ \\\~ \\\* \\\| \\\\ \\\( \\\) \\\[ \\\] \\\{ \\\}
+%%      ^^^^ ^^^^ ^^^^ ^^^^ ^^^^ ^^^^ ^^^^ ^^^^ ^^^^ ^^^^ ^^^^ ^^^^ ^^^^ dialog-escape-sequence-face
+
+%%% Object names
+
+        #object #object2
+%%      ^^^^^^^ ^^^^^^^^ dialog-object-name-face
+        #object+ #object- #object< #object> #object_
+%%      ^^^^^^^^ ^^^^^^^^ ^^^^^^^^ ^^^^^^^^ ^^^^^^^^ dialog-object-name-face
+        \#object
+%%      ^^ dialog-escape-sequence-face
+%%        ^^^^^^ nil
+
+%%% Special characters
+
+        # $ @ ~ * |
+%%      ^ ^ ^ ^ ^ ^ dialog-special-character-face
+
+%%% Variables
+
+        $var $var2
+%%      ^^^^ ^^^^^ dialog-variable-name-face
+        $var+ $var- $var< $var> $var_
+%%      ^^^^^ ^^^^^ ^^^^^ ^^^^^ ^^^^^ dialog-variable-name-face
+        \$var
+%%      ^^ dialog-escape-sequence-face
+%%        ^^^ nil
+
+%%% Special syntax
+
+        { (or) }
+%%         ^^ nil
+%%      ^      ^ nil
+%%        ^  ^ nil
+        (if) (then) (elseif) (then) (else) (endif)
+%%       ^^   ^^^^   ^^^^^^   ^^^^   ^^^^   ^^^^^ nil
+%%      ^  ^ ^    ^ ^      ^ ^    ^ ^    ^ ^     ^ nil
+        (select) (or) (or) (stopping)
+%%       ^^^^^^   ^^   ^^   ^^^^^^^^ nil
+%%      ^      ^ ^  ^ ^  ^ ^        ^ nil
+        (select) (or) (or) (cycling)
+%%       ^^^^^^   ^^   ^^   ^^^^^^^ nil
+%%      ^      ^ ^  ^ ^  ^ ^       ^ nil
+        (select) (or) (or) (at random)
+%%       ^^^^^^   ^^   ^^   ^^ ^^^^^^ nil
+%%      ^      ^ ^  ^ ^  ^ ^         ^ nil
+        (select) (or) (or) (purely at random)
+%%       ^^^^^^   ^^   ^^   ^^^^^^ ^^ ^^^^^^ nil
+%%      ^      ^ ^  ^ ^  ^ ^                ^ nil
+        (select) (or) (or) (then at random)
+%%       ^^^^^^   ^^   ^^   ^^^^ ^^ ^^^^^^ nil
+%%      ^      ^ ^  ^ ^  ^ ^              ^ nil
+        (select) (or) (or) (then purely at random)
+%%       ^^^^^^   ^^   ^^   ^^^^ ^^^^^^ ^^ ^^^^^^  nil
+%%      ^      ^ ^  ^ ^  ^ ^                     ^ nil
+        (accumulate $Element) (into $Sum)
+%%       ^^^^^^^^^^            ^^^^ nil
+%%                  ^^^^^^^^        ^^^^ dialog-variable-name-face
+%%      ^                   ^ ^         ^ nil
+        (collect $Element) (into $List)
+%%       ^^^^^^^            ^^^^ nil
+%%               ^^^^^^^^        ^^^^^ dialog-variable-name-face
+%%      ^                ^ ^          ^ nil
+        (collect words) (into $List)
+%%       ^^^^^^^         ^^^^ nil
+%%               ^^^^^ nil
+%%                            ^^^^^ dialog-variable-name-face
+%%      ^             ^ ^          ^ nil
+        (determine object $Obj) (from words) (matching all of $List)
+%%       ^^^^^^^^^ ^^^^^^        ^^^^ ^^^^^   ^^^^^^^^ ^^^ ^^ nil
+%%                        ^^^^                                ^^^^^ dialog-variable-name-face
+%%      ^                     ^ ^          ^ ^                     ^ nil
+
+        \(or\)
+%%      ^^  ^^ dialog-escape-sequence-face
+%%        ^^   nil
+
+%%% Paired punctuation
+
+        { } [ ] ( )
+%%      ^ ^ nil
+%%          ^ ^ nil
+%%              ^ ^ nil

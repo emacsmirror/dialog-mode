@@ -595,6 +595,22 @@ Match when the escape character is escaped."
 
 (require 'ert-x)
 
+(ert-deftest dialog-font-lock-level-1 ()
+  "Test level 1 font-lock."
+  (skip-unless (featurep 'ert-font-lock))
+  (let ((font-lock-maximum-decoration '((dialog-mode . 1))))
+    (ert-font-lock-test-file
+     (ert-resource-file "font-lock-level-1.dg")
+     'dialog-mode)))
+
+(ert-deftest dialog-font-lock-level-2 ()
+  "Test level 2 font-lock."
+  (skip-unless (featurep 'ert-font-lock))
+  (let ((font-lock-maximum-decoration '((dialog-mode . 2))))
+    (ert-font-lock-test-file
+     (ert-resource-file "font-lock-level-2.dg")
+     'dialog-mode)))
+
 (ert-deftest dialog-font-lock-level-3 ()
   "Test level 3 font-lock."
   (skip-unless (featurep 'ert-font-lock))
