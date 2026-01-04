@@ -239,6 +239,22 @@
   :group 'dialog
   :prefix "dialog-")
 
+(defface dialog-brace-face
+  `((default ,(and (facep 'font-lock-bracket-face)
+                   (list :inherit 'font-lock-bracket-face))))
+  "Face to highlight Dialog braces.")
+(defvar dialog-brace-face
+  'dialog-brace-face
+  "Font-lock face specification to highlight Dialog braces.")
+
+(defface dialog-bracket-face
+  `((default ,(and (facep 'font-lock-bracket-face)
+                   (list :inherit 'font-lock-bracket-face))))
+  "Face to highlight Dialog brackets.")
+(defvar dialog-bracket-face
+  'dialog-bracket-face
+  "Font-lock face specification to highlight Dialog brackets.")
+
 (defface dialog-dictionary-word-face
   '((default :inherit font-lock-type-face))
   "Face to highlight a Dialog dictionary word.")
@@ -262,6 +278,14 @@
 (defvar dialog-object-name-face
   'dialog-object-name-face
   "Font-lock face specification to highlight a Dialog object name.")
+
+(defface dialog-paren-face
+  `((default ,(and (facep 'font-lock-bracket-face)
+                   (list :inherit 'font-lock-bracket-face))))
+  "Face to highlight Dialog parenthesis.")
+(defvar dialog-paren-face
+  'dialog-paren-face
+  "Font-lock face specification to highlight Dialog parenthesis.")
 
 (defface dialog-special-block-face
   '((default :inherit font-lock-keyword-face))
@@ -409,12 +433,15 @@ for dictionary words, objects, and variables.")
   (append
    dialog-font-lock-keywords-2
    `((,(dialog-rx unescaped ?\( (group block-syntax))
-      (1 dialog-special-block-face))))
+      (1 dialog-special-block-face))
+     (,(rx (or ?\{ ?\})) . dialog-brace-face)
+     (,(rx (or ?\[ ?\])) . dialog-bracket-face)
+     (,(rx (or ?\( ?\))) . dialog-paren-face)))
   "Font lock keywords for level 3 highlighting in Dialog mode.
 
-Highlights selected Dialog special syntax, escape sequences, special
-characters, and user defined names for dictionary words, objects, and
-variables.")
+Highlights selected Dialog special syntax, braces, brackets,
+parenthesis, escape sequences, special characters, and user defined
+names for dictionary words, objects, and variables.")
 
 (defvar dialog-font-lock-keywords dialog-font-lock-keywords-2
   "Default expressions to highlight in Dialog mode.")

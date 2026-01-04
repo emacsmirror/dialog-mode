@@ -25,16 +25,19 @@
 %%% Rule head
 
 (rule head)
-%% <- nil
-%%^^^ ^^^^^ nil
+%% <- dialog-paren-face
+%%^^^ ^^^^ nil
+%%        ^ dialog-paren-face
 
 @(rule head)
 %% <- dialog-special-character-face
-%%^^^^ ^^^^^ nil
+%%^^^^ ^^^^ nil
+%%         ^ dialog-paren-face
 
 ~(rule head)
 %% <- dialog-special-character-face
-%%^^^^ ^^^^^ nil
+%%^^^^ ^^^^ nil
+%%         ^ dialog-paren-face
 
 %%% Comments
 
@@ -74,30 +77,50 @@
 
         { (or) }
 %%         ^^ dialog-special-block-face
+%%      ^      ^ dialog-brace-face
+%%        ^  ^ dialog-paren-face
         (if) (then) (elseif) (then) (else) (endif)
 %%       ^^   ^^^^   ^^^^^^   ^^^^   ^^^^   ^^^^^ dialog-special-block-face
+%%      ^  ^ ^    ^ ^      ^ ^    ^ ^    ^ ^     ^ dialog-paren-face
         (select) (or) (or) (stopping)
 %%       ^^^^^^   ^^   ^^   ^^^^^^^^ dialog-special-block-face
+%%      ^      ^ ^  ^ ^  ^ ^        ^ dialog-paren-face
         (select) (or) (or) (cycling)
 %%       ^^^^^^   ^^   ^^   ^^^^^^^ dialog-special-block-face
+%%      ^      ^ ^  ^ ^  ^ ^       ^ dialog-paren-face
         (select) (or) (or) (at random)
 %%       ^^^^^^   ^^   ^^   ^^ ^^^^^^ dialog-special-block-face
+%%      ^      ^ ^  ^ ^  ^ ^         ^ dialog-paren-face
         (select) (or) (or) (purely at random)
 %%       ^^^^^^   ^^   ^^   ^^^^^^ ^^ ^^^^^^ dialog-special-block-face
+%%      ^      ^ ^  ^ ^  ^ ^                ^ dialog-paren-face
         (select) (or) (or) (then at random)
 %%       ^^^^^^   ^^   ^^   ^^^^ ^^ ^^^^^^ dialog-special-block-face
+%%      ^      ^ ^  ^ ^  ^ ^              ^ dialog-paren-face
         (select) (or) (or) (then purely at random)
 %%       ^^^^^^   ^^   ^^   ^^^^ ^^^^^^ ^^ ^^^^^^  dialog-special-block-face
+%%      ^      ^ ^  ^ ^  ^ ^                     ^ dialog-paren-face
         (accumulate $Element) (into $Sum)
 %%       ^^^^^^^^^^            ^^^^ dialog-special-block-face
 %%                  ^^^^^^^^        ^^^^ dialog-variable-name-face
+%%      ^                   ^ ^         ^ dialog-paren-face
         (collect $Element) (into $List)
 %%       ^^^^^^^            ^^^^ dialog-special-block-face
 %%               ^^^^^^^^        ^^^^^ dialog-variable-name-face
+%%      ^                ^ ^          ^ dialog-paren-face
         (collect words) (into $List)
 %%       ^^^^^^^         ^^^^ dialog-special-block-face
 %%               ^^^^^ nil
 %%                            ^^^^^ dialog-variable-name-face
+%%      ^             ^ ^          ^ dialog-paren-face
         (determine object $Obj) (from words) (matching all of $List)
 %%       ^^^^^^^^^ ^^^^^^        ^^^^ ^^^^^   ^^^^^^^^ ^^^ ^^ dialog-special-block-face
 %%                        ^^^^                                ^^^^^ dialog-variable-name-face
+%%      ^                     ^ ^          ^ ^                     ^ dialog-paren-face
+
+%%% Paired punctuation
+
+        { } [ ] ( )
+%%      ^ ^ dialog-brace-face
+%%          ^ ^ dialog-bracket-face
+%%              ^ ^ dialog-paren-face
