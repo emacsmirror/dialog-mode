@@ -72,6 +72,9 @@
 %%      ^^^^ ^^^^^ dialog-variable-name-face
         $var+ $var- $var< $var> $var_
 %%      ^^^^^ ^^^^^ ^^^^^ ^^^^^ ^^^^^ dialog-variable-name-face
+        \$var
+%%      ^^ dialog-escape-sequence-face
+%%        ^^^ nil
 
 %%% Special syntax
 
