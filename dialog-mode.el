@@ -248,6 +248,7 @@
   :prefix "dialog-")
 
 (defface dialog-brace-face
+  ;; `font-lock-bracket-face' appeared in Emacs 29.
   `((default ,(and (facep 'font-lock-bracket-face)
                    (list :inherit 'font-lock-bracket-face))))
   "Face to highlight Dialog braces.")
@@ -256,6 +257,7 @@
   "Font-lock face specification to highlight Dialog braces.")
 
 (defface dialog-bracket-face
+  ;; `font-lock-bracket-face' appeared in Emacs 29.
   `((default ,(and (facep 'font-lock-bracket-face)
                    (list :inherit 'font-lock-bracket-face))))
   "Face to highlight Dialog brackets.")
@@ -288,6 +290,7 @@
   "Font-lock face specification to highlight a Dialog object name.")
 
 (defface dialog-paren-face
+  ;; `font-lock-bracket-face' appeared in Emacs 29.
   `((default ,(and (facep 'font-lock-bracket-face)
                    (list :inherit 'font-lock-bracket-face))))
   "Face to highlight Dialog parenthesis.")
