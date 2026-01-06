@@ -382,9 +382,8 @@
   `(rx-let ((block-syntax
              (or "or"
                  "if" "then" "elseif" "then" "else" "endif"
-                 "select" "stopping" "cycling" "at random"
-                 "purely at random" "then at random"
-                 "then purely at random"
+                 "select" "stopping" "cycling" "at random" "purely at random"
+                 "then at random" "then purely at random"
                  "accumulate" "collect" "into"
                  "determine object" "from words" "matching all of"))
             (dictionary-word
