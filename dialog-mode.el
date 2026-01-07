@@ -1158,7 +1158,7 @@ which is about to be sent to a live process in the debug buffer."
 (defvar dialog-debug-send-command-input nil
   "The current command which is being sent to the debug process.")
 
-(defvar dialog-debug-send-history nil
+(defvar dialog-debug-send-command-history nil
   "History of minibuffer input for `dialog-debug-send-command'.")
 
 (defun dialog-debug-send-command (&optional prompt)
@@ -1171,7 +1171,7 @@ prompt for the command to send instead of using the default."
   (let ((dialog-debug-send-command-input
          (if prompt
              (read-from-minibuffer
-              "Command: " nil nil nil 'dialog-debug-send-history)
+              "Command: " nil nil nil 'dialog-debug-send-command-history)
            dialog-debug-send-default-command)))
     (run-hooks 'dialog-debug-send-command-hook)
     (funcall dialog-debug-send-command-function)))
