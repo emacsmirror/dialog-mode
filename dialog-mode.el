@@ -1130,7 +1130,7 @@ displayed if it exists."
 ;;;###autoload
 (defalias 'run-dialog #'dialog-debug-run)
 
-(defcustom dialog-debug-send-default-command "@replay"
+(defcustom dialog-debug-send-command-default "@replay"
   "Specifies the default command sent to the debug process.
 
 The command is sent by the function `dialog-debug-send-command'."
@@ -1165,14 +1165,14 @@ which is about to be sent to a live process in the debug buffer."
   "Send a command to the debug program.
 
 The default command to send is determined by the value of
-`dialog-debug-send-default-command'.  With a prefix argument PROMPT,
+`dialog-debug-send-command-default'.  With a prefix argument PROMPT,
 prompt for the command to send instead of using the default."
   (interactive "P")
   (let ((dialog-debug-send-command-input
          (if prompt
              (read-from-minibuffer
               "Command: " nil nil nil 'dialog-debug-send-command-history)
-           dialog-debug-send-default-command)))
+           dialog-debug-send-command-default)))
     (run-hooks 'dialog-debug-send-command-hook)
     (funcall dialog-debug-send-command-function)))
 
