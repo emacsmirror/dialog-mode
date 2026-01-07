@@ -1168,13 +1168,13 @@ The default command to send is determined by the value of
 `dialog-debug-send-default-command'.  With a prefix argument PROMPT,
 prompt for the command to send instead of using the default."
   (interactive "P")
-  (setq dialog-debug-send-command-input
-        (if prompt
-            (read-from-minibuffer
-             "Command: " nil nil nil 'dialog-debug-send-history)
-          dialog-debug-send-default-command))
-  (run-hooks 'dialog-debug-send-command-hook)
-  (funcall dialog-debug-send-command-function))
+  (let ((dialog-debug-send-command-input
+         (if prompt
+             (read-from-minibuffer
+              "Command: " nil nil nil 'dialog-debug-send-history)
+           dialog-debug-send-default-command)))
+    (run-hooks 'dialog-debug-send-command-hook)
+    (funcall dialog-debug-send-command-function)))
 
 (defun dialog-debug-send-command-with-clipboard ()
   "Save a command to the clipboard."
