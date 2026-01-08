@@ -1566,6 +1566,60 @@ REPORT-FN is Flymake's callback function."
     (define-key map (kbd "C-c C-z") #'dialog-debug-run)
     map))
 
+;;;; Menu
+
+(easy-menu-define dialog-mode-menu dialog-mode-map
+  "Menu for Dialog Mode."
+  '("Dialog"
+    ["Start of rule" beginning-of-defun
+     :help "Go to the start of the rule definition around point"]
+    ["End of rule" end-of-defun
+     :help "Go to the end of the rule definition around point"]
+    ["Mark rule" mark-defun
+     :help "Mark the rule definition around point"]
+    "---"
+    ["Toggle indentation" dialog-toggle-indent
+     :help "Toggle the indentation on the current line"]
+    ["Toggle indentation and insert newline" dialog-toggle-indent-and-newline
+     :help "Toggle the indentation on the current line and insert a newline"]
+    "---"
+    ["Jump to place" imenu
+     :help "Jump to a place of significance in the buffer"]
+    ["Jump to block opening" dialog-up-block
+     :help "Jump to the opening of the current block"]
+    "---"
+    ["Start the debug program" dialog-debug-run
+     :active (not (dialog-debug-process))
+     :help "Start the Dialog debug program"]
+    ["Display debug buffer" dialog-debug-display-buffer
+     :active (dialog-debug-buffer)
+     :help "Display the buffer for the Dialog debug program"]
+    ["Display and switch to debug buffer"
+     (lambda ()
+       (interactive)
+       (pop-to-buffer (dialog-debug-buffer)))
+     :active (dialog-debug-buffer)
+     :help "Display and switch to the buffer for the Dialog debug program"]
+    "---"
+    ["Send current line as debug command" dialog-debug-send-command-from-line
+     :active (dialog-debug-process)
+     :help "Send the current line to the debug program"]
+    ["Send region as debug commands" dialog-debug-send-command-from-region
+     :active (and (dialog-debug-process) (use-region-p))
+     :help "Send the lines in the current region to the debug program"]
+    ["Send default debug command" dialog-debug-send-command
+     :active (dialog-debug-process)
+     :help "Send the default command to the debug program"]
+    ["Send debug command"
+     (lambda ()
+       (interactive)
+       (dialog-debug-send-command 'prompt))
+     :active (dialog-debug-process)
+     :help "Send a command to the debug program"]
+    "---"
+    ["Browse the manual" dialog-browse-manual
+     :help "Browse the Dialog manual in the default browser"]))
+
 ;;;; Mode
 
 ;;;###autoload
