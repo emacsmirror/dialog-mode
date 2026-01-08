@@ -21,6 +21,9 @@ The following commands are bound in the major-mode keymap:
   `dialog-up-block' {C-c C-u}
     Move point to the beginning of the current block.
 
+  `dialog-debug-display-buffer' {C-c C-b}
+    Display the buffer for the current `comint' process.
+
   `dialog-debug-send-command' {C-c C-c}
     Send a command (usually "@replay") to the debug program.  There needs to
     already be a debug process running for this to work.  If hooks are

@@ -54,6 +54,9 @@
 ;;   `dialog-up-block' {C-c C-u}
 ;;     Move point to the beginning of the current block.
 
+;;   `dialog-debug-display-buffer' {C-c C-b}
+;;     Display the buffer for the current `comint' process.
+
 ;;   `dialog-debug-send-command' {C-c C-c}
 ;;     Send a command (usually "@replay") to the debug program.  There needs to
 ;;     already be a debug process running for this to work.  If hooks are
@@ -1057,6 +1060,13 @@ value is by using directory local variables.")
   "Return the current debug buffer."
   (get-buffer dialog-debug-buffer-name))
 
+(defun dialog-debug-display-buffer ()
+  "Display the current debug buffer."
+  (interactive)
+  (if-let* ((buffer (dialog-debug-buffer)))
+      (display-buffer buffer)
+    (user-error "No debug buffer exists")))
+
 (defun dialog-debug-process ()
   "Return the current debug process."
   (get-buffer-process dialog-debug-buffer-name))
@@ -1547,6 +1557,7 @@ REPORT-FN is Flymake's callback function."
 
 (defvar dialog-mode-map
   (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "C-c C-b") #'dialog-debug-display-buffer)
     (define-key map (kbd "C-c C-c") #'dialog-debug-send-command)
     (define-key map (kbd "C-c C-e") #'dialog-debug-send-command-dwim)
     (define-key map (kbd "C-c C-i") #'dialog-toggle-indent)
