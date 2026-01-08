@@ -55,10 +55,15 @@
 ;;     Move point to the beginning of the current block.
 
 ;;   `dialog-debug-send-command' {C-c C-c}
-;;     Send a command (usually "@replay") to the debug process.  There needs to
+;;     Send a command (usually "@replay") to the debug program.  There needs to
 ;;     already be a debug process running for this to work.  If hooks are
 ;;     configured to save the current buffer this is effectively a hot-reload to
 ;;     incorporate the latest buffer changes.
+
+;;   `dialog-debug-send-command-dwim' {C-c C-e}
+;;     If there is an active region, send it line-by-line as a command to the
+;;     debug program, otherwise send the current line.  In both cases any comment
+;;     syntax at the start of the line is removed.  Empty lines are not sent.
 
 ;;   `dialog-debug-run' {C-c C-z}
 ;;     Start the debugger as `comint' process and pop to its buffer.  If the
@@ -1176,6 +1181,51 @@ prompt for the command to send instead of using the default."
     (run-hooks 'dialog-debug-send-command-hook)
     (funcall dialog-debug-send-command-function)))
 
+(defun dialog-debug-send-command-from-line (&optional no-error)
+  "Send the current line as a command to the debug program.
+
+Leading and trailing whitespace on the line is removed.  If the line
+begins with comment syntax this is also removed.  When NO-ERROR is
+non-nil do not emit an error when refusing to send a line because it was
+empty."
+  (interactive)
+  (let ((dialog-debug-send-command-default
+         (replace-regexp-in-string
+          (rx string-start (>= 2 ?%) (0+ whitespace))
+          ""
+          (string-trim
+           (buffer-substring-no-properties (line-beginning-position)
+                                           (line-end-position))))))
+    (if (string-empty-p dialog-debug-send-command-default)
+        (unless no-error
+          (user-error "Current line is empty"))
+      (dialog-debug-send-command))))
+
+(defun dialog-debug-send-command-from-region ()
+  "Send the active region as a command to the debug program.
+
+The region is sent line-by-line with any leading comment syntax removed.
+Empty lines are not sent."
+  (interactive)
+  (if (use-region-p)
+      (save-excursion
+        (save-restriction
+          (narrow-to-region (region-beginning) (region-end))
+          (goto-char (point-min))
+          (while (and (progn (dialog-debug-send-command-from-line 'no-error) t)
+                      (zerop (forward-line))
+                      (not (eobp))))))
+    (user-error "No active region")))
+
+(defun dialog-debug-send-command-dwim ()
+  "Send the active region or current line as a command to the debug program.
+
+When a region is active, send the region, otherwise send the current line."
+  (interactive)
+  (if (use-region-p)
+      (dialog-debug-send-command-from-region)
+    (dialog-debug-send-command-from-line)))
+
 (defun dialog-debug-send-command-with-clipboard ()
   "Save a command to the clipboard."
   (gui-set-selection 'CLIPBOARD dialog-debug-send-command-input)
@@ -1479,6 +1529,7 @@ REPORT-FN is Flymake's callback function."
 (defvar dialog-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c C-c") #'dialog-debug-send-command)
+    (define-key map (kbd "C-c C-e") #'dialog-debug-send-command-dwim)
     (define-key map (kbd "C-c C-i") #'dialog-toggle-indent)
     (define-key map (kbd "C-c C-m") #'dialog-toggle-indent-and-newline)
     (define-key map (kbd "C-c C-u") #'dialog-up-block)

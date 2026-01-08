@@ -22,10 +22,15 @@ The following commands are bound in the major-mode keymap:
     Move point to the beginning of the current block.
 
   `dialog-debug-send-command' {C-c C-c}
-    Send a command (usually "@replay") to the debug process.  There needs to
+    Send a command (usually "@replay") to the debug program.  There needs to
     already be a debug process running for this to work.  If hooks are
     configured to save the current buffer this is effectively a hot-reload to
     incorporate the latest buffer changes.
+
+  `dialog-debug-send-command-dwim' {C-c C-e}
+    If there is an active region, send it line-by-line as a command to the
+    debug program, otherwise send the current line.  In both cases any comment
+    syntax at the start of the line is removed.  Empty lines are not sent.
 
   `dialog-debug-run' {C-c C-z}
     Start the debugger as `comint' process and pop to its buffer.  If the
