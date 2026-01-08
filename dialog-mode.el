@@ -1053,6 +1053,14 @@ value is by using directory local variables.")
   "Specifies the buffer name used for the debug process buffer."
   :type 'string)
 
+(defun dialog-debug-buffer ()
+  "Return the current debug buffer."
+  (get-buffer dialog-debug-buffer-name))
+
+(defun dialog-debug-process ()
+  "Return the current debug process."
+  (get-buffer-process dialog-debug-buffer-name))
+
 (defcustom dialog-debug-program "dgdebug"
   "Specifies the name of the Dialog debugger executable."
   :type 'string)
@@ -1089,7 +1097,7 @@ allow the creation of a new one.  The currently used buffer will be
 displayed if it exists."
   (interactive "P")
   (let ((buffer (and dialog-debug-as-interp
-                     (or (get-buffer dialog-debug-buffer-name)
+                     (or (dialog-debug-buffer)
                          (with-current-buffer (generate-new-buffer
                                                dialog-debug-buffer-name)
                            (dialog-debug-mode)
@@ -1244,7 +1252,7 @@ When a region is active, send the region, otherwise send the current line."
 
 (defun dialog-debug-send-command-with-comint ()
   "Send a command to the debug process in the comint buffer."
-  (when-let* ((process (or (get-buffer-process dialog-debug-buffer-name)
+  (when-let* ((process (or (dialog-debug-process)
                            (user-error "No debug process is running"))))
     (message "Sending command '%s' to process '%s'"
              dialog-debug-send-command-input (process-name process))
