@@ -1160,6 +1160,15 @@ variable `dialog-debug-send-command-input' contains the current command
 which is about to be sent to a live process in the debug buffer."
   :type 'hook)
 
+(defcustom dialog-debug-send-command-prompt-sets-default nil
+  "Specifies whether to set the default command from the prompt.
+
+A non-nil value means that the command entered at the prompt will become
+the new default value to send when the prompt for a command is not
+shown."
+  :type 'boolean
+  :safe #'booleanp)
+
 (defvar dialog-debug-send-command-input nil
   "The current command which is being sent to the debug process.")
 
@@ -1178,6 +1187,8 @@ prompt for the command to send instead of using the default."
              (read-from-minibuffer
               "Command: " nil nil nil 'dialog-debug-send-command-history)
            dialog-debug-send-command-default)))
+    (when (and prompt dialog-debug-send-command-prompt-sets-default)
+      (setq dialog-debug-send-command-default dialog-debug-send-command-input))
     (run-hooks 'dialog-debug-send-command-hook)
     (funcall dialog-debug-send-command-function)))
 
