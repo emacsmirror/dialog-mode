@@ -75,15 +75,11 @@ suitable for smaller projects where the debug process is only managed from
             (lambda ()
               (unless dialog-game-files
                 (let ((files (directory-files
-                              default-directory nil "\\.dg\\'"))
-                      (stddebug "stddebug.dg")
-                      (stdlib "stdlib.dg"))
-                  ;; Remove the debug library from the list.
-                  (setq files (delete stddebug files))
-                  ;; Move the standard library to the end of the list.
-                  (when (member stdlib files)
-                    (setq files (append (delete stdlib files)
-                                        (list stdlib))))
+                              default-directory nil "\\.dg\\'")))
+                  ;; Move standard libraries to the end of the list.
+                  (dolist (lib '("stddebug.dg" "stdlib.dg"))
+                    (when (member lib files)
+                      (setq files (append (delete lib files) (list lib)))))
                   (setq dialog-game-files files)))))
 
 If no game files are configured a prompt will appear to select them.  This is
