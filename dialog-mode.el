@@ -1623,7 +1623,7 @@ REPORT-FN is Flymake's callback function."
 
 (easy-menu-define dialog-mode-menu dialog-mode-map
   "Menu for Dialog Mode."
-  '("Dialog"
+  `("Dialog"
     ["Start of rule" beginning-of-defun
      :help "Go to the start of the rule definition around point"]
     ["End of rule" end-of-defun
@@ -1663,6 +1663,17 @@ REPORT-FN is Flymake's callback function."
     ["Send default command" dialog-debug-send-command
      :active (dialog-debug-process)
      :help "Send the default command to the debug program"]
+    ("Send command from presets"
+     :active (dialog-debug-process)
+     ,@(cl-loop for (command . description) in dialog-debug-send-command-presets
+                collect (vector
+                         command
+                         (let ((command command))  ; Lexical binding.
+                           (lambda ()
+                             (interactive)
+                             (let ((dialog-debug-send-command-default command))
+                               (dialog-debug-send-command))))
+                         :help (or description (concat "Send " command)))))
     ["Send command"
      (lambda ()
        (interactive)
