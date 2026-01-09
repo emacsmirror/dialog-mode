@@ -466,6 +466,17 @@ names for dictionary words, objects, and variables.")
 
 ;;;; Utility
 
+(defun dialog--completing-read (&rest args)
+  "Completing-read with Dialog specific minibuffer keymap.
+
+Call `completing-read' with ARGS using a minibuffer keymap that doesn't
+bind special completion commands to the space and \"?\" keys."
+  (let ((minibuffer-local-completion-map
+         (copy-keymap minibuffer-local-completion-map)))
+    (define-key minibuffer-local-completion-map " " #'self-insert-command)
+    (define-key minibuffer-local-completion-map "?" #'self-insert-command)
+    (apply #'completing-read args)))
+
 (defun dialog--forward-prefix-chars ()
   "Move forwards over characters with prefix syntax."
   (unless (eobp)
@@ -1193,6 +1204,40 @@ shown."
 (defvar dialog-debug-send-command-history nil
   "History of minibuffer input for `dialog-debug-send-command'.")
 
+(defvar dialog-debug-send-command-presets
+  '(("(restart)"   . "Restart the program")
+    ("(trace off)" . "Disable query tracing")
+    ("(trace on)"  . "Enable query tracing")
+    ("(undo)"      . "Restore the program state at the time of the latest (save undo 0)")
+    ("@again"      . "Undo, then re-enter the last line of game input")
+    ("@dynamic"    . "Show the current state of all dynamic predicates")
+    ("@g"          . "Undo, then re-enter the last line of game input")
+    ("@help"       . "Display this help text")
+    ("@quit"       . "Quit the debugger")
+    ("@replay"     . "Restart, then replay the accumulated game input")
+    ("@restore"    . "Restart and read game input from a file")
+    ("@save"       . "Save accumulated game input to a file")
+    ("@tree"       . "Show the current state of the object tree"))
+  "Alist of commands to send and their descriptions.")
+
+(defun dialog--annotate-command (command)
+  "Return the annotation for COMMAND."
+  (and-let* ((item (assoc command dialog-debug-send-command-presets))
+             (description (cdr item)))
+    (concat " " description)))
+
+(defun dialog--group-command (command transform)
+  "Group COMMAND by its command type.
+
+When TRANSFORM is non-nil return the command, otherwise return the
+command type."
+  (cond (transform
+         command)
+        ((string-prefix-p "@" command)
+         "Debug command")
+        (t
+         "Predicate")))
+
 (defun dialog-debug-send-command (&optional prompt)
   "Send a command to the debug program.
 
@@ -1202,8 +1247,16 @@ prompt for the command to send instead of using the default."
   (interactive "P")
   (let ((dialog-debug-send-command-input
          (if prompt
-             (read-from-minibuffer
-              "Command: " nil nil nil 'dialog-debug-send-command-history)
+             (dialog--completing-read
+              "Command: "
+              (lambda (string pred action)
+                (if (eq action 'metadata)
+                    (list 'metadata
+                          (cons 'annotation-function #'dialog--annotate-command)
+                          (cons 'group-function #'dialog--group-command))
+                  (complete-with-action
+                   action dialog-debug-send-command-presets string pred)))
+              nil nil nil 'dialog-debug-send-command-history)
            dialog-debug-send-command-default)))
     (when (and prompt dialog-debug-send-command-prompt-sets-default)
       (setq dialog-debug-send-command-default dialog-debug-send-command-input))
