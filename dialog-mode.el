@@ -1654,16 +1654,16 @@ REPORT-FN is Flymake's callback function."
      :active (dialog-debug-buffer)
      :help "Display and switch to the buffer for the Dialog debug program"]
     "---"
-    ["Send current line as debug command" dialog-debug-send-command-from-line
+    ["Send current line as command" dialog-debug-send-command-from-line
      :active (dialog-debug-process)
      :help "Send the current line to the debug program"]
-    ["Send region as debug commands" dialog-debug-send-command-from-region
+    ["Send region as commands" dialog-debug-send-command-from-region
      :active (and (dialog-debug-process) (use-region-p))
      :help "Send the lines in the current region to the debug program"]
-    ["Send default debug command" dialog-debug-send-command
+    ["Send default command" dialog-debug-send-command
      :active (dialog-debug-process)
      :help "Send the default command to the debug program"]
-    ["Send debug command"
+    ["Send command"
      (lambda ()
        (interactive)
        (dialog-debug-send-command 'prompt))
