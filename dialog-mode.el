@@ -1367,6 +1367,13 @@ function allows \"[more]\" prompts to be dismissed automatically, see
   :type 'boolean
   :safe #'booleanp)
 
+(defun dialog-debug-toggle-use-pty ()
+  "Toggle the value of `dialog-debug-use-pty'."
+  (interactive)
+  (setq dialog-debug-use-pty (not dialog-debug-use-pty))
+  (message "Use of a pseudo-terminal for the next debug buffer is now %s"
+           (if dialog-debug-use-pty "enabled" "disabled")))
+
 (define-derived-mode dialog-debug-mode comint-mode "DGDebug"
   "Major mode for running the Dialog interactive debugger.
 
