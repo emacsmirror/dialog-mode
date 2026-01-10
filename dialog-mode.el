@@ -1644,6 +1644,15 @@ REPORT-FN is Flymake's callback function."
     ["Jump to block opening" dialog-up-block
      :help "Jump to the opening of the current block"]
     "---"
+    ["Enable the use of a pseudo-terminal" dialog-debug-toggle-use-pty
+     :style toggle
+     :selected dialog-debug-use-pty
+     :help "Enable running the Dialog debug program using a pseudo-terminal"]
+    ["Enable automatic debug output responder" dialog-debug-toggle-output-responder
+     :active dialog-debug-use-pty
+     :style toggle
+     :selected dialog-debug-use-output-responder
+     :help "Enable sending automatic responses to debug output"]
     ["Start the debug program" dialog-debug-run
      :active (not (dialog-debug-process))
      :help "Start the Dialog debug program"]
