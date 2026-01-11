@@ -415,7 +415,7 @@
                                      ?\( ?\) ?\[ ?\] ?\{ ?\} ?~ ?* ?| ?% ?/)))
                       (seq ?\\ (char ?b ?d ?l ?n ?r ?s ?u)))))
             (escape-sequence
-             (seq ?\\ anychar))
+             (seq ?\\ (not control)))
             (object
              (seq ?# (1+ user-chars)))
             (outline
@@ -478,7 +478,7 @@ Highlights Dialog topics.")
       nil
       (0 dialog-delimiter-face))
      ;; A special character anywhere else is an error.
-     (,(rx (char ?# ?$ ?@ ?~ ?* ?|)) . dialog-warning-face)))
+     (,(rx (char ?# ?$ ?* ?@ ?\\ ?| ?~)) . dialog-warning-face)))
   "Font lock keywords for level 2 highlighting in Dialog mode.
 
 Highlights escape sequences, special characters, and user defined names
