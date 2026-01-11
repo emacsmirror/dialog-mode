@@ -409,8 +409,11 @@
                  "accumulate" "collect" "into"
                  "determine object" "from words" "matching all of"))
             (dictionary-word
-             (seq ?@ (or (1+ (char alphanumeric ?-))
-                         (seq ?\\ (char ?b ?d ?l ?n ?r ?s ?u)))))
+             (seq ?@ (or
+                      ;; Match parser: !strchr("\n\r\t ()[]{}~*|%/", ch)
+                      (1+ (not (char whitespace
+                                     ?\( ?\) ?\[ ?\] ?\{ ?\} ?~ ?* ?| ?% ?/)))
+                      (seq ?\\ (char ?b ?d ?l ?n ?r ?s ?u)))))
             (escape-sequence
              (seq ?\\ anychar))
             (object
