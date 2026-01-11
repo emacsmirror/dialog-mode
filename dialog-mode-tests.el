@@ -524,6 +524,16 @@ Ignore comments that look like rule-heads."
     (goto-char (point-min))
     (should (dialog--rule-uses-topic-p))))
 
+(ert-deftest dialog-uses-topic-ignore-as-prefix ()
+  "Look for use of a topic in a rule's body.
+
+Ignore the use of * as a prefix."
+  (dialog-mode-tests--with-temp-buffer
+      "(head)
+	(exhaust) { *(extension version) }"
+    (goto-char (point-min))
+    (should-not (dialog--rule-uses-topic-p))))
+
 (ert-deftest dialog-uses-topic-ignore-trailing-comments ()
   "Look for use of a topic in a rule's body.
 

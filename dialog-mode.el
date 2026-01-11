@@ -565,6 +565,7 @@ existing parser state PPSS over calling `syntax-ppss'."
                    (point))))
       (cl-loop while (re-search-forward (dialog-rx unescaped ?*) bound t)
                for ppss = (syntax-ppss)
+               unless (eq (char-after) ?\()
                unless (dialog--in-comment-p ppss)
                when (cl-plusp (dialog--paren-depth ppss))
                return t))))
