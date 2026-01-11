@@ -24,20 +24,23 @@
 
 %%% Rule head
 
-(rule head)
+(rule head *)
 %% <- nil
 %%^^^ ^^^^ nil
-%%        ^ nil
+%%         ^ nil
+%%          ^ nil
 
-@(rule head)
+@(rule head *)
 %% <- nil
 %%^^^^ ^^^^ nil
-%%         ^ nil
+%%          ^ nil
+%%           ^ nil
 
-~(rule head)
+~(rule head *)
 %% <- nil
 %%^^^^ ^^^^ nil
-%%         ^ nil
+%%          ^ nil
+%%           ^ nil
 
 %%% Comments
 
@@ -80,6 +83,21 @@
 
         # $ @ ~ * |
 %%      ^ ^ ^ ^ ^ ^ nil
+        @()
+%%      ^ nil
+%%       ^^ nil
+        ~()
+%%      ^ nil
+%%       ^^ nil
+        *()
+%%      ^ nil
+%%       ^^ nil
+        [|]
+%%       ^ nil
+%%      ^ ^ nil
+        ~{}
+%%      ^ nil
+%%       ^^ nil
 
 %%% Variables
 

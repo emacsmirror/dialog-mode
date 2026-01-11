@@ -269,6 +269,15 @@
   'dialog-bracket-face
   "Font-lock face specification to highlight Dialog brackets.")
 
+(defface dialog-delimiter-face
+  ;; `font-lock-delimiter-face' appeared in Emacs 29.
+  `((default ,(and (facep 'font-lock-delimiter-face)
+                   (list :inherit 'font-lock-delimiter-face))))
+  "Face to highlight a Dialog delimiter.")
+(defvar dialog-delimiter-face
+  'dialog-delimiter-face
+  "Font-lock face specification to highlight a Dialog delimiter.")
+
 (defface dialog-dictionary-word-face
   '((default :inherit font-lock-type-face))
   "Face to highlight a Dialog dictionary word.")
@@ -293,6 +302,15 @@
   'dialog-object-name-face
   "Font-lock face specification to highlight a Dialog object name.")
 
+(defface dialog-operator-face
+  ;; `font-lock-operator-face' appeared in Emacs 29.
+  `((default ,(and (facep 'font-lock-operator-face)
+                   (list :inherit 'font-lock-operator-face))))
+  "Face to highlight a Dialog operator.")
+(defvar dialog-operator-face
+  'dialog-operator-face
+  "Font-lock face specification to highlight a Dialog operator.")
+
 (defface dialog-paren-face
   ;; `font-lock-bracket-face' appeared in Emacs 29.
   `((default ,(and (facep 'font-lock-bracket-face)
@@ -309,13 +327,6 @@
   'dialog-special-block-face
   "Font-lock face specification to highlight Dialog special block syntax.")
 
-(defface dialog-special-character-face
-  '((default :inherit font-lock-builtin-face))
-  "Face to highlight a Dialog special character.")
-(defvar dialog-special-character-face
-  'dialog-special-character-face
-  "Font-lock face specification to highlight a Dialog special character.")
-
 (defface dialog-topic-name-face
   '((default :inherit font-lock-preprocessor-face))
   "Face to highlight a Dialog topic name.")
@@ -329,6 +340,13 @@
 (defvar dialog-variable-name-face
   'dialog-variable-name-face
   "Font-lock face specification to highlight a Dialog variable name.")
+
+(defface dialog-warning-face
+  '((default :inherit font-lock-warning-face))
+  "Face to highlight a Dialog warning.")
+(defvar dialog-warning-face
+  'dialog-warning-face
+  "Font-lock face specification to highlight a Dialog warning.")
 
 ;;;; Customization
 
@@ -407,8 +425,6 @@
              (seq rule-head-start (1+ not-newline)))
             (rule-head-start
              (seq line-start (optional (or ?@ ?~)) ?\())
-            (special-character
-             (char ?# ?$ ?@ ?~ ?* ?|))
             (topic
              (seq line-start ?# (group (1+ user-chars))))
             (unescaped
@@ -422,6 +438,12 @@
      (rx ,@regexps)))
 
 ;;;; Font lock
+
+(defun dialog--font-lock-matcher-pre-form ()
+  "Move backwards 1 character when inside parens and outside of a comment."
+  (unless (or (dialog--in-comment-p)
+              (zerop (dialog--paren-depth)))
+    (forward-char -1)))
 
 (defconst dialog-font-lock-keywords-1
   `((,(dialog-rx topic) . dialog-topic-name-face))
@@ -437,7 +459,23 @@ Highlights Dialog topics.")
      (,(dialog-rx escape-sequence)   . dialog-escape-sequence-face)
      (,(dialog-rx object)            . dialog-object-name-face)
      (,(dialog-rx variable)          . dialog-variable-name-face)
-     (,(dialog-rx special-character) . dialog-special-character-face)))
+     ;; Prefix syntax before ( or { is an operator.
+     (,(rx (group (syntax ?')) (or ?\( ?\{))
+      (1 dialog-operator-face))
+     ;; $ or * not at the top-level is an operator.
+     (,(rx (or ?$ ?*))
+      ,(rx point (or ?$ ?*))
+      (dialog--font-lock-matcher-pre-form)
+      nil
+      (0 dialog-operator-face))
+     ;; | not at the top-level is a delimiter.
+     (,(rx ?|)
+      ,(rx point ?|)
+      (dialog--font-lock-matcher-pre-form)
+      nil
+      (0 dialog-delimiter-face))
+     ;; A special character anywhere else is an error.
+     (,(rx (char ?# ?$ ?@ ?~ ?* ?|)) . dialog-warning-face)))
   "Font lock keywords for level 2 highlighting in Dialog mode.
 
 Highlights escape sequences, special characters, and user defined names

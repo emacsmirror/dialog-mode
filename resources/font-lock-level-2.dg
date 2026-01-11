@@ -24,20 +24,23 @@
 
 %%% Rule head
 
-(rule head)
+(rule head *)
 %% <- nil
 %%^^^ ^^^^ nil
-%%        ^ nil
+%%         ^ dialog-operator-face
+%%          ^ nil
 
-@(rule head)
-%% <- dialog-special-character-face
+@(rule head *)
+%% <- dialog-operator-face
 %%^^^^ ^^^^ nil
-%%         ^ nil
+%%          ^ dialog-operator-face
+%%           ^ nil
 
-~(rule head)
-%% <- dialog-special-character-face
+~(rule head *)
+%% <- dialog-operator-face
 %%^^^^ ^^^^ nil
-%%         ^ nil
+%%          ^ dialog-operator-face
+%%           ^ nil
 
 %%% Comments
 
@@ -59,7 +62,7 @@
 %%      ^^ ^^ ^^ ^^ ^^ ^^ ^^ ^^ ^^ ^^ ^^ ^^ ^^ dialog-escape-sequence-face
         \\# \\$ \\@ \\~ \\* \\| \\\ \\( \\) \\[ \\] \\{ \\}
 %%      ^^  ^^  ^^  ^^  ^^  ^^  ^^^ ^^  ^^  ^^  ^^  ^^  ^^ dialog-escape-sequence-face
-%%        ^   ^   ^   ^   ^   ^ dialog-special-character-face
+%%        ^   ^   ^   ^   ^   ^ dialog-warning-face
 %%                                    ^   ^ nil
 %%                                            ^   ^ nil
 %%                                                    ^   ^ nil
@@ -79,7 +82,22 @@
 %%% Special characters
 
         # $ @ ~ * |
-%%      ^ ^ ^ ^ ^ ^ dialog-special-character-face
+%%      ^ ^ ^ ^ ^ ^ dialog-warning-face
+        @()
+%%      ^ dialog-operator-face
+%%       ^^ nil
+        ~()
+%%      ^ dialog-operator-face
+%%       ^^ nil
+        *()
+%%      ^ dialog-operator-face
+%%       ^^ nil
+        [|]
+%%       ^ dialog-delimiter-face
+%%      ^ ^ nil
+        ~{}
+%%      ^ dialog-operator-face
+%%       ^^ nil
 
 %%% Variables
 
