@@ -401,14 +401,7 @@
 
 (defmacro dialog-rx (&rest regexps)
   "Extended version of `rx' for translation of form REGEXPS."
-  `(rx-let ((block-syntax
-             (or "or"
-                 "if" "then" "elseif" "then" "else" "endif"
-                 "select" "stopping" "cycling" "at random" "purely at random"
-                 "then at random" "then purely at random"
-                 "accumulate" "collect" "into"
-                 "determine object" "from words" "matching all of"))
-            (dictionary-word
+  `(rx-let ((dictionary-word
              (seq ?@ (or
                       ;; Match parser: !strchr("\n\r\t ()[]{}~*|%/", ch)
                       (1+ (not (char whitespace
@@ -442,17 +435,19 @@
 
 ;;;; Font lock
 
-(defun dialog--font-lock-matcher-pre-form ()
-  "Move backwards 1 character when inside parens and outside of a comment."
-  (unless (or (dialog--in-comment-p)
-              (zerop (dialog--paren-depth)))
-    (forward-char -1)))
-
 (defconst dialog-font-lock-keywords-1
   `((,(dialog-rx topic) . dialog-topic-name-face))
   "Font lock keywords for level 1 highlighting in Dialog mode.
 
 Highlights Dialog topics.")
+
+(defun dialog--font-lock-prematch-special-character ()
+  "Pre-match function for anchored font-lock match of a special character."
+  (unless (or (dialog--in-comment-p)
+              (zerop (dialog--paren-depth)))
+    ;; Move backwards to the position before the original matcher match in order
+    ;; to re-match it with the anchored-match.
+    (forward-char -1)))
 
 (defconst dialog-font-lock-keywords-2
   (append
@@ -468,13 +463,13 @@ Highlights Dialog topics.")
      ;; $ or * not at the top-level is an operator.
      (,(rx (or ?$ ?*))
       ,(rx point (or ?$ ?*))
-      (dialog--font-lock-matcher-pre-form)
+      (dialog--font-lock-prematch-special-character)
       nil
       (0 dialog-operator-face))
      ;; | not at the top-level is a delimiter.
      (,(rx ?|)
       ,(rx point ?|)
-      (dialog--font-lock-matcher-pre-form)
+      (dialog--font-lock-prematch-special-character)
       nil
       (0 dialog-delimiter-face))
      ;; A special character anywhere else is an error.
@@ -484,14 +479,39 @@ Highlights Dialog topics.")
 Highlights escape sequences, special characters, and user defined names
 for dictionary words, objects, and variables.")
 
+(defun dialog--font-lock-prematch-block ()
+  "Pre-match function for anchored font-lock match of block-defining syntax."
+  (unless (dialog--in-comment-p)
+    (if-let* ((symbol (dialog-statement-symbol (dialog--parse-block))))
+        ;; Return a search limit that is immediately after the leading words of
+        ;; the syntax.  All words up until the search limit are going to get
+        ;; highlighted.
+        (pcase symbol
+          ((or 'dialog-accumulate-t 'dialog-collect-t 'dialog-into-t)
+           (save-excursion (forward-word) (point)))
+          ('dialog-determine-t
+           (save-excursion (forward-word 2) (point)))
+          ('dialog-matching-t
+           (save-excursion (forward-word 3) (point)))
+          (_
+           (dialog--list-end (1- (point)))))
+      ;; Prevent searching beyond the current position.
+      (forward-char -1)
+      (1+ (point)))))
+
 (defconst dialog-font-lock-keywords-3
   (append
    dialog-font-lock-keywords-2
-   `((,(dialog-rx unescaped ?\( (group block-syntax))
-      (1 dialog-special-block-face))
-     (,(rx (or ?\{ ?\})) . dialog-brace-face)
+   `((,(rx (or ?\{ ?\})) . dialog-brace-face)
      (,(rx (or ?\[ ?\])) . dialog-bracket-face)
-     (,(rx (or ?\( ?\))) . dialog-paren-face)))
+     (,(rx ?\))          . dialog-paren-face)
+     ;; Opening paren and leading words of block-defining syntax.
+     (,(dialog-rx unescaped (group ?\())
+      (1 dialog-paren-face)
+      (,(rx (1+ word))
+       (dialog--font-lock-prematch-block)
+       nil
+       (0 dialog-special-block-face)))))
   "Font lock keywords for level 3 highlighting in Dialog mode.
 
 Highlights selected Dialog special syntax, braces, brackets,
@@ -525,6 +545,16 @@ bind special completion commands to the space and \"?\" keys."
 
 Prefer existing parser state PPSS over calling `syntax-ppss'."
   (nth 4 (or ppss (syntax-ppss))))
+
+(defun dialog--list-end (start)
+  "Return the end position of the list which opens at position START."
+  (save-excursion
+    (goto-char start)
+    (condition-case nil
+        (let ((parse-sexp-ignore-comments t))
+          (forward-sexp)
+          (1- (point)))
+      (scan-error))))
 
 (defun dialog--list-start (&optional ppss)
   "Return the buffer position which opens the list around point.
