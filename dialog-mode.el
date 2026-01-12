@@ -1391,6 +1391,7 @@ When a region is active, send the region, otherwise send the current line."
 
 (defvar dialog-debug-mode-map
   (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "C-c C-c") #'dialog-debug-send-command)
     (define-key map (kbd "C-c C-z") #'quit-window)
     (set-keymap-parent map comint-mode-map)
     map))
