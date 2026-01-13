@@ -1680,12 +1680,12 @@ REPORT-FN is Flymake's callback function."
   (cl-case (char-after)
     ;; Topic.
     (?# (1- most-positive-fixnum))
-    ;; Rule-head.
-    (?\( most-positive-fixnum)
     ;; Comment.
-    (t (save-excursion
+    (?% (save-excursion
          (forward-same-syntax)
-         (- (current-column) 2)))))
+         (- (current-column) 2)))
+    ;; Rule-head.
+    (t most-positive-fixnum)))
 
 ;;;; Keymap
 
