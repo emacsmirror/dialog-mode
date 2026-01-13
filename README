@@ -1,196 +1,74 @@
-Dialog Mode is an Emacs major mode for creating and editing Dialog files.
-The following features are implemented:
+Dialog Mode is an Emacs major mode for creating and editing Dialog
+files.  The following features are implemented:
 
-* Syntax-highlighting.
-* Indentation.
-* Motion around and selection of rule definitions.
-* Align support for alignment of syntax following a rule-head.
-* Imenu support for rule-heads (including topic when relevant).
-* Outline Mode support for comments, rule-heads, and topics.
-* Comint support for running the Dialog debugger.
-* Flymake support.
+   * Syntax-highlighting.
+   * Indentation.
+   * Motion around and selection of rule definitions.
+   * Align support for alignment of syntax following a rule-head.
+   * Imenu support for topics and rule-heads.
+   * Outline Mode support for comments, rule-heads, and topics.
+   * Comint support for running the Dialog debugger.
+   * Flymake support.
 
-The following commands are bound in the major-mode keymap:
+See the manual for full details.
 
-  `dialog-toggle-indent' {C-c TAB}
-    Add or remove indentation on the current line.
+Installation
+============
 
-  `dialog-up-block' {C-c C-u}
-    Move point to the beginning of the current block.
+The recommended way to install the package is to use an Emacs package
+manager.  Using this method should also install the pre-built Info
+manual.
 
-  `dialog-debug-display-buffer' {C-c C-b}
-    Display the buffer for the current `comint' process.
+To install the package from MELPA, follow the package archive setup
+instructions available at <https://melpa.org/> and install the package
+named "dialog-mode".
 
-  `dialog-debug-send-command' {C-c C-c}
-    Send a command (usually "@replay") to the debug program.  There needs to
-    already be a debug process running for this to work.  If hooks are
-    configured to save the current buffer this is effectively a hot-reload to
-    incorporate the latest buffer changes.
+Alternatively, the development repository can be cloned to a location
+which is present in the Emacs 'load-path' and made available to use.
 
-  `dialog-debug-send-command-dwim' {C-c C-e}
-    If there is an active region, send it line-by-line as a command to the
-    debug program, otherwise send the current line.  In both cases any comment
-    syntax at the start of the line is removed.  Empty lines are not sent.
+To clone the repository to a local sub-directory:
 
-  `dialog-debug-run' {C-c C-z}
-    Start the debugger as `comint' process and pop to its buffer.  If the
-    process already exists, just pop to its buffer.
+     git clone https://git.sr.ht/~mew/dialog-mode
 
-When using `fill-paragraph' the effects are currently restricted to the
-current line.  This restriction is in place because general text and Dialog
-syntax are likely both present on contiguous lines of varying length at the
-same indentation level.  To fill multiple lines, select the region first.
-For Emacs 30 and newer, the default key-binding for {M-q} will call the
-function `prog-fill-reindent-defun' instead of `fill-paragraph'.  Calling
-`prog-fill-reindent-defun' will re-indent all lines within the current rule
-but it is recommended to revert the key-binding to call `fill-paragraph'
-instead, restoring the easier way to fill lines within the active region.
+The value of 'load-path' can be modified in the Emacs configuration,
+although such a change will need to placed before any actions which
+attempt to load the package.  The following example shows how to load
+package, assuming that the repository has been cloned within a directory
+named "manual-packages" within the user's ".emacs.d" directory:
 
-For source code which uses a double sized indent for the first level of
-indentation, set the value of `dialog-indent-initial-size' to 2.
+     ;; Add the package directory to the load path.
+     (add-to-list 'load-path "~/.emacs.d/manual-packages/dialog-mode")
 
-Use `align' and `align-current' to modify whitespace for vertical alignment
-of syntax which shares the line with a rule-head.  Alignment is configured to
-use tab-stops by default but can be customized by modifying the variable
-`dialog-align-rules-list'.
+     ;; Load the package.
+     (require 'dialog-mode)
 
-Comint support will start the Dialog debugger with the game files specified
-by the value of `dialog-game-files' which is a list of file names to use.
-This variable is intended to be used as a directory local variable to allow
-the file names to vary per project.  An example .dir-locals.el file might
-look like this:
+Example configuration
+=====================
 
-  ((nil . ((dialog-game-files . ("cloak.dg" "stdlib.dg")))))
+Assuming that the Dialog Mode package has been installed by a package
+manager and will be auto-loaded, the following example demonstrates how
+to configure some basic settings, and enable some optional features:
 
-Setting the value of `dialog-game-files' by other methods should also work.
-Taking a guess by looking for files with a ".dg" extension as the major mode
-is being initialized is potentially inefficient and error prone but may be
-suitable for smaller projects where the debug process is only managed from
-`dialog-mode' buffers:
+     (with-eval-after-load 'dialog-mode
+       ;; Configure indentation, fill-column, and page-delimiter to match
+       ;; the standard library.
+       (add-hook 'dialog-mode-hook
+                 (lambda ()
+                   (indent-tabs-mode)
+                   (setq fill-column 79)
+                   (setq-local page-delimiter
+                               (concat "^" (make-string fill-column ?%)))))
 
-  (add-hook 'dialog-mode-hook
-            (lambda ()
-              (unless dialog-game-files
-                (let ((files (directory-files
-                              default-directory nil "\\.dg\\'")))
-                  ;; Move standard libraries to the end of the list.
-                  (dolist (lib '("stddebug.dg" "stdlib.dg"))
-                    (when (member lib files)
-                      (setq files (append (delete lib files) (list lib)))))
-                  (setq dialog-game-files files)))))
+       ;; Add the Imenu menu to the menu-bar.
+       (add-hook 'dialog-mode-hook #'imenu-add-menubar-index)
 
-If no game files are configured a prompt will appear to select them.  This is
-a prompt for multiple files; the default separator for completing multiple
-files in Emacs is a comma.
+       ;; Bind a key for easier access to Imenu.
+       (define-key dialog-mode-map (kbd "C-c C-j") #'imenu)
 
-Note: The order of the files in the `dialog-game-files' list is significant
-in the same way it is when compiling or manually running the debug program.
+       ;; Revert to the old key-binding for M-q.
+       (define-key dialog-mode-map (kbd "M-q") #'fill-paragraph))
 
-The game file names should be specified as relative to the current project
-root as determined by `project'.  If the game source code is being version
-controlled it is likely that no further configuration will be required, in
-other cases it may be required to find another way to identify the project
-root.  One way to do this is by using the standard library file name as
-project root marker:
+     ;; Enable Speedbar support for Dialog files.
+     (with-eval-after-load 'speedbar
+       (speedbar-add-supported-extension ".dg"))
 
-  (with-eval-after-load 'project
-    (add-to-list 'project-vc-extra-root-markers "stdlib.dg"))
-
-If the project root cannot be determined the current working directory is
-used instead.  This is likely to be less reliable and limits some
-functionality to buffers which also happen to have the correct working
-directory.
-
-For an equivalent of hot-reload, the function `dialog-debug-send-command'
-will default to sending "@replay" to the debug process after the default
-value of `dialog-debug-send-command-hook' has prompted to save any modified
-buffers.  To save the current buffer automatically or take any other custom
-actions before the command is sent, customize the hook variable to have the
-desired effect.
-
-  ;; Automatically save the current `dialog-mode' buffer when replaying.
-  (add-hook 'dialog-debug-send-command-hook
-            (lambda ()
-              (when (and (derived-mode-p 'dialog-mode)
-                         (equal dialog-debug-send-command-input "@replay"))
-                (save-buffer))))
-
-To make the debug process work more like it does in a terminal and support
-the display of text styling, set the value of `dialog-debug-use-pty' to t and
-toggle automatic dismissal of "[more]" prompts with the command
-`dialog-debug-toggle-output-responder'.
-
-Any prompts which originate from the standard library are expected to be
-handled by extensions which are loaded during game development.  For example,
-to skip any yes/no prompts without waiting for input, define a new rule for
-the (yesno) predicate:
-
-  (yesno)	%% Automatically accept yes/no prompts.
-
-To run the debug program directly instead of as a command interpreter set the
-value `dialog-debug-as-interp' to nil.  This also defaults command sending to
-use the clipboard.  A value of nil is the default when using Microsoft
-Windows because the Windows build of the debugger can currently only run in a
-graphical window and is unable to receive input outside of that interface.
-That said, the function used to send a command is configurable and so you are
-free to attempt to send a command to the Windows build of the debugger by
-another method at your own risk:
-
-  (defconst dialog-debug-send-ahk-script
-    "
-  command := EnvGet('DIALOG_DEBUG_COMMAND')
-  SetTitleMatchMode 3  ; Exact match for window title.
-  Try {
-      ControlSend command '{Enter}',, 'Dialog Interactive Debugger'
-  }
-  Catch {
-      Exit 1
-  }
-  "
-    "The AutoHotkey send command script.")
-
-  (defun dialog-debug-send-command-with-ahk ()
-    "Send a command to the debug program window using AutoHotkey."
-    (let ((process-environment
-           (cons
-            (concat "DIALOG_DEBUG_COMMAND=" dialog-debug-send-command-input)
-            process-environment)))
-      (message "Sending command '%s' using AutoHotkey"
-               dialog-debug-send-command-input)
-      (unless (eq 0 (with-temp-buffer
-                      (insert dialog-debug-send-ahk-script)
-                      (call-process-region (point-min) (point-max)
-                                           "autohotkey" nil nil nil "*")))
-        (message "Failed to send command"))))
-
-  (setq dialog-debug-send-command-function
-        #'dialog-debug-send-command-with-ahk)
-
-The command `dialog-browse-manual' will open the online version of the Dialog
-manual using the default browser, or with a prefix argument using the
-secondary browser.  To open the manual using a different browser configure
-the value of `browse-url-handlers'; if configured to open via
-`eww-browse-url' it may be preferable to also configure the value of
-`eww-readable-urls'.
-
-Basic configuration:
-
-  (with-eval-after-load 'dialog-mode
-    ;; Configure indentation, fill-column, and page-delimiter to match the
-    ;; standard library.
-    (add-hook 'dialog-mode-hook
-              (lambda ()
-                (indent-tabs-mode)
-                (setq fill-column 79)
-                (setq-local page-delimiter
-                            (concat "^" (make-string fill-column ?%)))))
-    ;; Bind a key for easier access to Imenu.
-    (define-key dialog-mode-map (kbd "C-c C-j") #'imenu)
-    ;; Revert to the old key-binding for M-q.
-    (define-key dialog-mode-map (kbd "M-q") #'fill-paragraph))
-
-If using Imenu or `which-function-mode' it will be beneficial to make sure
-that the value of `imenu-auto-rescan' is set to t.
-
-It may be preferable to customize the value of `font-lock-maximum-decoration'
-to reduce the font-lock level for Dialog Mode to 2.

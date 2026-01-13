@@ -1,0 +1,999 @@
+\input texinfo
+@c %**start of header
+@settitle Dialog Mode
+@setfilename dialog-mode.info
+@paragraphindent 0
+@c %**end of header
+
+@include version.texi
+
+@copying
+Copyright @copyright{} 2023-2026 Morgan Willcock
+
+@quotation
+Permission is granted to copy, distribute and/or modify this document
+under the terms of the GNU Free Documentation License, Version 1.3 or
+any later version published by the Free Software Foundation; with no
+Invariant Sections, with the Front-Cover Texts being ``A GNU Manual'',
+and with the Back-Cover Texts as in (a) below.  A copy of the license
+is included in the section entitled ``GNU Free Documentation
+License''.
+
+(a) The FSF's Back-Cover Text is: ``You have the freedom to copy and
+modify this GNU manual.''
+@end quotation
+@end copying
+
+@dircategory Emacs languages
+@direntry
+* Dialog Mode: (dialog-mode).  Support for editing Dialog files.
+@end direntry
+
+@titlepage
+@title Dialog Mode
+@subtitle Version @value{VERSION}
+@page
+@vskip 0pt plus 1filll
+@insertcopying
+@end titlepage
+
+@contents
+
+
+@node Top
+@top Dialog Mode
+
+Version @value{VERSION}.
+
+@menu
+* Overview::
+* Syntax highlighting::
+* Indentation::
+* Motion commands::
+* Paragraphs::
+* Imenu support::
+* Outline Mode support::
+* Configuring game files::
+* Flymake support::
+* Interactive debugger::
+* Browsing the Dialog manual::
+
+Appendices
+
+* GNU Free Documentation License::
+
+Indices
+
+* Keystroke Index::
+* Function Index::
+* Variable Index::
+* Index::
+
+@detailmenu
+ --- The Detailed Node Listing ---
+
+Overview
+
+* Installation::
+* Example configuration::
+
+Indentation
+
+* Code alignment::
+
+Interactive debugger
+
+* Sending commands::
+* The debug buffer::
+* Disabling the command interpreter::
+* Using a pseudo-terminal::
+* Dismissing game prompts::
+
+@end detailmenu
+@end menu
+
+
+@node Overview
+@chapter Overview
+@cindex overview
+@cindex package overview
+
+@include features.texi
+
+@menu
+* Installation::
+* Example configuration::
+@end menu
+
+
+@node Installation
+@section Installation
+@cindex installation
+
+@include installation.texi
+
+
+@node Example configuration
+@section Example configuration
+@cindex configuration @subentry example
+
+@include example-configuration.texi
+
+
+@node Syntax highlighting
+@chapter Syntax highlighting
+@cindex font-lock
+@cindex fontification
+@cindex highlighting @subentry of errors
+@cindex highlighting @subentry of syntax
+@cindex syntax highlighting
+
+Syntax highlighting is implemented for Dialog syntax using the
+following font-lock faces:
+
+@multitable {@samp{*} (as a prefix or in a rule)} {@code{dialog-escape-sequence-face}}
+@headitem Syntax @tab Face
+@item Topic @tab @code{dialog-topic-name-face}
+@item Escape sequence @tab @code{dialog-escape-sequence-face}
+@item Object name @tab @code{dialog-object-name-face}
+@item Variable name @tab @code{dialog-variable-name-face}
+@item @samp{*} (as a prefix or in a rule) @tab @code{dialog-operator-face}
+@item @samp{@@} (as a prefix) @tab @code{dialog-operator-face}
+@item @samp{~} (as a prefix) @tab @code{dialog-operator-face}
+@item @samp{$} (in a rule) @tab @code{dialog-operator-face}
+@item @samp{|} (in a rule) @tab @code{dialog-delimiter-face}
+@item @samp{@{} @samp{@}} @tab @code{dialog-brace-face}
+@item @samp{[} @samp{]} @tab @code{dialog-bracket-face}
+@item @samp{(} @samp{)} @tab @code{dialog-paren-face}
+@item Block-defining syntax @tab @code{dialog-special-block-face}
+@end multitable
+
+Block-defining syntax is any built-in syntax which has the form of a
+rule and defines a logical block.  This includes the following forms:
+
+@example dialog
+(if) ... (then) ... (elseif) ... (then) ... (else) ... (endif)
+(select) ... (or) ... (or) ... (stopping)
+(select) ... (or) ... (or) ... (cycling)
+(select) ... (or) ... (or) ... (at random)
+(select) ... (or) ... (or) ... (purely at random)
+(select) ... (or) ... (or) ... (then at random)
+(select) ... (or) ... (or) ... (then purely at random)
+(accumulate $Element) ... (into $Sum)
+(collect $Element) ... (into $List)
+(collect words) ... (into $List)
+(determine object $Obj) ... (from words) ... (matching all of $List)
+@end example
+
+@quotation Note
+The current font-lock implementation will attempt to validate each
+block-defining syntax form before the face is applied to ensure that
+the form is definitely the built-in special syntax rather than a
+user-defined rule which happens to begin with the same words.  The
+validation is tolerant of forms that span multiple lines but the
+(re)application of the face will currently only work if the entire
+form is on the same line.
+@end quotation
+
+Three levels of font-lock are available for selection based on the
+value of customization variable @code{font-lock-maximum-decoration}.
+To improve performance and reduce visual distraction, it may be
+preferable to use the second font-lock level which removes
+highlighting for block-defining syntax, braces, brackets, and
+parentheses.  It is relatively easy to manually re-add font-lock rules
+for matching braces, brackets, or parentheses should it be required;
+escaped characters are still highlighted by the second font-lock level
+and so a later non-overriding match for these characters will always
+be correct.
+
+@example lisp
+;; Use second level syntax-highlighting for dialog-mode and the
+;; highest level which is available for all other modes.
+(setq font-lock-maximum-decoration '((dialog-mode . 2) (t . t)))
+
+;; Re-add font-lock for parentheses in dialog-mode.
+(font-lock-add-keywords
+ 'dialog-mode '(("[()]" . dialog-paren-face)) 'append)
+@end example
+
+The additional face @code{dialog-warning-face} is used to highlight
+usage of syntax which is likely incorrect.  This currently applies to
+invalid escape sequences and any usage of the characters @samp{#},
+@samp{$}, @samp{*}, @samp{@@}, @samp{|}, and @samp{~} in the wrong
+context.
+
+
+@node Indentation
+@chapter Indentation
+@cindex block
+@cindex indent
+@cindex indentation
+
+Dialog Mode calculates the indentation level for a given line based on
+the existing indentation level, the usage of braces, brackets, and
+parentheses, and the use of special Dialog syntax which creates a
+logical block.  The indentation behavior can be generally defined as:
+
+@itemize @bullet
+@item
+If the line begins with no existing indentation the indentation amount
+will not be changed.  Column 0 might be thought of as ``sticky''.
+@item
+The indentation level is incremented when a previous line has no
+indentation, i.e. if a previous line is a rule-head the subsequent
+lines are the rule body.
+@item
+The indentation level is incremented inside braces, brackets, and
+parentheses.
+@item
+The indentation level is incremented for lines following special
+syntax which defines logical block.
+@end itemize
+
+There are two excepts to the above, both implemented to match
+conventions used by the Dialog standard library:
+
+@itemize @bullet
+@item
+The indentation level is decremented inside braces when the opening
+brace is immediately followed by a non-whitespace character.
+@item
+The indentation level is decremented for a line which only contains
+the syntax @samp{(or)} with an optional trailing comment.
+@end itemize
+
+The default configuration will uses 8 columns per level of
+indentation, although the first level is taken as a special case.  The
+indentation size can be configured by modifying the values of the
+customization variables @code{dialog-indent-offset} and
+@code{dialog-indent-initial-size}.
+
+@defopt dialog-indent-offset
+Specifies the number of columns used for indentation per block level.
+@end defopt
+
+@defopt dialog-indent-initial-size
+Specifies a multiplier used for the first level of indentation.  If
+working on a game where the first level of indentation is twice the
+expected size, set this value to 2.
+@end defopt
+
+It is also possible to opt-out of indentation inside braces, brackets,
+and parentheses by modifying the value of the customization variable
+@code{dialog-indent-in-statement}.
+
+@defopt dialog-indent-in-statement
+Specifies whether indentation is incremented inside braces, brackets,
+and parentheses.  The value is a list of characters.  If the character
+which opens the block (@samp{@{}, @samp{[}, or @samp{(}) is present in
+the list then the indentation level will be incremented within that
+block.
+@end defopt
+
+@cindex electric-indent-mode @subentry indentation
+@kindex C-c TAB
+If @code{electric-indent-mode} is enabled, lines will be re-indented
+as newline characters are inserted.  The exception to this is when the
+newline is inserted on a line which begins in column 0, in which case
+the indentation will not be be modified.  This means that when writing
+rule-heads the next line is assumed to be another rule-head, and when
+writing a rule-body the next line is assumed to be a continuation of
+that same rule body.  Adding and removing the leading white-space on
+the line will effectively toggle between the two indentation
+behaviors, the command @code{dialog-toggle-indent} can be used to do
+this from anywhere on the line and is bound to @kbd{C-c TAB} by
+default.
+
+@defun dialog-toggle-indent
+Toggle indentation on the current line.  When called from a position
+which is less than or equal to the indentation column, move to the
+indentation column.  The size of the inserted indentation will be
+appropriate the current block level.
+@end defun
+
+@menu
+* Code alignment::
+@end menu
+
+
+@node Code alignment
+@section Code alignment
+@cindex align
+@cindex alignment @subentry of indentation
+@cindex code alignment @subentry indentation
+
+Dialog Mode defines support for aligning code that shares a line with
+a rule-head.  These operations are performed by built-in Emacs
+commands such as @code{align}, @code{align-current}, and
+@code{align-entire}.  For example, when alignment is performed on the
+following code:
+
+@example dialog
+(story title)Cloak of Darkness
+(story author)          Linus Åkesson
+(story noun)  A port of Roger Firth's reference game
+@end example
+
+the result will be similar to:
+
+@example dialog
+(story title)   Cloak of Darkness
+(story author)  Linus Åkesson
+(story noun)    A port of Roger Firth's reference game
+@end example
+
+@quotation Note
+The @code{align} command operates on the current region as defined by
+point and mark, even when the region is not considered to be active.
+@end quotation
+
+The alignment rules are defined in the customization variable
+@code{dialog-align-rules-list}, with the default rules specifying that
+all white-space adjustments used for alignment should align with a
+tab-stop.
+
+@defopt dialog-align-rules-list
+Specifies the list of available alignment rules which will configured
+in Dialog Mode buffers and available for use by alignment commands.
+The rule format is the same as rules configured in the variable
+@code{align-rules-list}.
+@end defopt
+
+To align indentation without considering tab-stops the default rules
+may be adjusted; the following example shows how to modify the
+tab-stop preference within the existing rule:
+
+@example lisp
+;; Configure alignment to ignore tab-stops.
+(setf (alist-get 'tab-stop
+                 (alist-get 'dialog-rule-body
+                            dialog-align-rules-list))
+      nil)
+@end example
+
+
+@node Motion commands
+@chapter Motion commands
+@cindex rule @subentry navigation @seealso{Imenu support}
+@cindex rule @subentry selection
+@cindex motion
+@cindex navigation
+@cindex navigation @subentry function @seealso{Outline Mode support}
+@cindex selection
+
+Dialog Mode permits navigation around and selection of rule
+definitions with commands such as @code{beginning-of-defun},
+@code{end-of-defun}, and @code{mark-defun}; an Emacs @samp{defun}
+broadly translates to a Dialog rule, from the beginning of the
+rule-head to where the rule-body is terminated.
+
+@kindex C-c C-n
+@kindex C-c C-p
+For moving by paragraph the commands @code{dialog-forward-paragraph}
+and @code{dialog-backward-paragraph} are bound to @kbd{C-c C-n} and
+@kbd{C-c C-p} respectively.  What is deemed to be a paragraph in this
+context is configurable and tries to align with the buffer regions
+which are modified when using fill commands, see @ref{Paragraphs} for
+more details.
+
+@defun dialog-forward-paragraph
+Move forwards by Dialog paragraph.
+@end defun
+
+@defun dialog-backward-paragraph
+Move backwards by Dialog paragraph.
+@end defun
+
+@kindex C-c C-u
+An additional navigation function is also provided in the form of
+@code{dialog-up-block}, which moves to the opening of the current
+logical block, and is bound to @kbd{C-c C-u} by default.  When point
+is moved by using @code{dialog-up-block}, the value of the
+customization variable @code{dialog-block-motion-push-mark} determines
+whether the mark ring is modified.
+
+@defun dialog-up-block
+Move to the opening of the current logical block.  This is typically
+an opening @samp{@{} or @samp{[} character, the beginning of the
+current rule, or before any special syntax such as @samp{(if)} which
+opens a logical block.
+@end defun
+
+@defopt dialog-block-motion-push-mark
+Determines whether block-based motion (such as by calling
+@code{dialog-up-block}) will modify the mark ring.  A non-@code{nil}
+value indicates that block motion commands are permitted to push the
+previous location to the mark-ring when the value of point changes.
+@end defopt
+
+See also: @ref{Imenu support} and @ref{Outline Mode support}.
+
+
+@node Paragraphs
+@chapter Paragraphs
+@cindex paragraph
+@cindex filling
+
+Since text in a Dialog Mode buffer will tend to be a mix of regular
+text and Dialog syntax, filling functions and commands such as
+@code{dialog-forward-paragraph} and @code{dialog-backward-paragraph}
+are configured to use additional rules to identify where a paragraph
+begins and ends.  Non-comment lines will be split into paragraphs
+based on:
+
+@itemize @bullet
+@item
+Changes in the indentation level.
+@item
+Lines which are not indented.
+@item
+Lines which are empty or only contain white-space characters.
+@item
+Lines which have trailing comments.
+@item
+The value of the customization variable
+@code{dialog-paragraph-delimiter}.
+@end itemize
+
+The default value of @code{dialog-paragraph-delimiter} is a regular
+expression which will match specific lines of syntax, it is also
+possible to use a custom regular expression or function.
+
+@defopt dialog-paragraph-delimiter
+Specifies the configuration of an additional paragraph delimiter which
+is used to differentiate general text from Dialog syntax by closing
+and re-opening a paragraph.  A string value is taken as a regular
+expression.  A function value is taken as a function to call which
+takes no arguments.  Regular expression matches and function calls are
+made with point at the indentation column.  A value of @code{t} will
+match on every non-comment line, effectively limiting the definition
+of a paragraph to a single line.  A value of @code{nil} means that no
+additional delimiter is used.
+@end defopt
+
+
+@node Imenu support
+@chapter Imenu support
+@cindex Imenu
+
+Imenu provides indexing and navigation menus used to jump to points of
+interest in the current buffer.
+
+The Imenu index will contain all rule-heads and topics.  To assist in
+determining which rule-head is which, if a rule-head or rule-body uses
+a @samp{*} to reference the current topic the topic name will be
+joined to the start of the menu entry using the string stored in the
+customization variable @code{dialog-imenu-topic-separator} as a
+separator.
+
+@defopt dialog-imenu-topic-separator
+Specifies the string used to join the current topic to the beginning
+of an Imenu menu entry, should it be a rule which references the
+current topic.
+@end defopt
+
+@cindex which-function-mode @subentry using Imenu data
+For very large buffers, scanning for index entries can potentially be
+slow, although automatic re-scanning may be preferable to manually
+invoking the @samp{*Rescan*} option from the menu.  Consider
+configuring @code{imenu-auto-rescan} and
+@code{imenu-auto-rescan-maxout} to suitable values, bearing in mind
+that some other Emacs features may also be using Imenu data.  If using
+@code{which-function-mode}, which uses Imenu data to display the
+context of the current buffer position, @code{imenu-auto-rescan}
+should probably be set to @code{t} unless there is a noticeable
+performance issue or no buffer changes are being made.
+
+
+@node Outline Mode support
+@chapter Outline Mode support
+@cindex Outline Mode
+@cindex outline
+
+Outline Mode is major mode intended to edit outline-format documents
+with selective display.  The same functionality is also available
+through alternate key-bindings using the minor mode version, enabled
+by invoking @code{outline-minor-mode}.
+
+Dialog Mode defines Outline Mode settings by borrowing some
+conventions for headings and their associated @emph{depth} from the
+built-in Lisp mode.  Three types of headings are defined:
+
+@itemize @bullet
+@item
+Comments created by three or more @samp{%} characters at the beginning
+of a line, followed by at least one white-space character.
+@item
+Topics.
+@item
+Rule-heads.
+@end itemize
+
+The @emph{depth} of comment-based headings is determined by
+subtracting 2 from the number of @samp{%} characters which were used.
+For example, the following comments define Outline Mode headings for
+the first three levels:
+
+@example dialog
+%%% Level 1 heading
+%%%% Level 2 heading
+%%%%% Level 3 heading
+@end example
+
+The @emph{depth} of rule-head and topic based headings is not
+variable; Rule-heads have the maximum possible value for their depth,
+while topics have the maximum possible value minus 1, i.e. rule-heads
+are folded inside topics and topics are folded inside comment-based
+headings.
+
+
+@node Configuring game files
+@chapter Configuring game files
+@cindex Configuring game files
+
+The variable @code{dialog-game-files} specifies which file names are
+relevant to the current game.  It is intended to be used as a
+directory local variable to allow the file names to vary per project.
+
+@defvar dialog-game-files
+A list of strings which specifies the files relevant to the current
+game.  The order of the files in the @code{dialog-game-files} list is
+significant in the same way it is when compiling or manually running
+the debug program.
+@end defvar
+
+A typical @samp{.dir-locals.el} file might look like this:
+
+@example lisp
+((nil . ((dialog-game-files . ("cloak.dg" "stdlib.dg")))))
+@end example
+
+Setting the value of @code{dialog-game-files} by other methods should
+also work.  Taking a guess by looking for files with a @samp{.dg}
+extension as the major mode is being initialized is potentially
+inefficient and error prone but may be suitable for smaller projects
+where the debug process is only managed from Dialog Mode buffers.  The
+following example presumes that the sorted list of file names will
+give the correct order once standard libraries are moved to the end of
+the list:
+
+@example lisp
+(add-hook 'dialog-mode-hook
+          (lambda ()
+            (unless dialog-game-files
+              (let ((files (directory-files
+                            default-directory nil "\\.dg\\'")))
+                ;; Move standard libraries to the end of the list.
+                (dolist (lib '("stddebug.dg" "stdlib.dg"))
+                  (when (member lib files)
+                    (setq files (append (delete lib files) (list lib)))))
+                (setq dialog-game-files files)))))
+@end example
+
+The game file names should be specified as relative to the current
+project root as determined by @code{project}.  If the game source code
+is being version controlled it is likely that no further configuration
+will be required, in other cases it may be required to find another
+way to identify the project root.  One way to do this is by using the
+standard library file name as project root marker:
+
+@example lisp
+(with-eval-after-load 'project
+  (add-to-list 'project-vc-extra-root-markers "stdlib.dg"))
+@end example
+
+If the project root cannot be determined the current working directory
+is used instead.  This is likely to be less reliable and limits some
+functionality to buffers which also happen to have the correct working
+directory.
+
+
+@node Flymake support
+@chapter Flymake support
+@cindex Flymake
+
+Dialog Mode includes a Flymake back-end which is implemented by
+compiling the game in the background and looking at messages generated
+by the Dialog compiler.  The customization variable
+@code{dialog-compiler-program} specifies how to find the compiler.
+
+@defopt dialog-compiler-program
+Specifies the name of the Dialog compiler executable, either a name to
+be located somewhere on PATH or an absolute path to the file name.
+@end defopt
+
+Compilation runs using the original source files, as determined by
+@code{dialog-game-files} (see @ref{Configuring game files}), and
+because of this Dialog Mode buffers default the value of
+@code{flymake-no-changes-timeout} to @code{nil} to avoid needlessly
+running the compiler as the buffer is being edited.
+
+
+@node Interactive debugger
+@chapter Interactive debugger
+@cindex debugging
+@cindex interactive @subentry debugging
+@cindex running the game @subentry debugging
+
+Dialog includes a debug program which is designed to run a game in an
+environment where its state can be inspected and modified.  Dialog
+Mode includes support for running the debug program as a command
+interpreter, meaning that:
+
+@itemize @bullet
+@item
+A game can be run directly in an Emacs buffer.
+@item
+For any purpose, commands can be sent by Emacs to update a running
+game's state.
+@item
+For any purpose, debug output can be intercepted by Emacs.
+@end itemize
+
+The debug program will be started with the game files specified by the
+value of the variable @code{dialog-game-files}, see @ref{Configuring
+game files}.
+
+@kindex C-c C-z
+The command @code{dialog-debug-run}, bound to @kbd{C-c C-z} by
+default, is used to start the debug program named by the customization
+variable @code{dialog-debug-program} using the current game files and
+switch to the debug buffer.  The same command is also used to switch
+to an existing debug buffer.  If no game files are configured or
+@code{dialog-debug-run} was called with a prefix argument, a prompt
+will appear to select the game files.  With a double prefix argument
+the game directory can also be selected.
+
+@quotation Note
+The prompt for game files is a prompt to select multiple files, where
+the completion interface will likely expect that commas are used to
+separate each selected file.  The files selected at the prompt are not
+stored in any way; the intended purpose of the prompts is to
+temporarily override the current settings rather than initialize them.
+@end quotation
+
+@defopt dialog-debug-program
+Specifies the name of the Dialog debugger executable, either a name to
+be located somewhere on PATH or an absolute path to the file name.
+@end defopt
+
+@defun dialog-debug-run
+Start the debug program as a command interpreter process, display its
+buffer, and switch to that buffer.  If the process already exists,
+just display and switch to buffer which is associated with that
+process.  When called with a single prefix argument, always prompt for
+the game files.  When called with a double prefix argument, always
+prompt for the game directory and the game files.
+@end defun
+
+@kindex C-c C-b
+To display an existing debug buffer without switching to it, the
+separate command @code{dialog-debug-display-buffer} is available and
+bound to @kbd{C-c C-b} by default.
+
+@defun dialog-debug-display-buffer
+Display an existing debug buffer.
+@end defun
+
+See @ref{The debug buffer} for details on how the ``current'' debug
+buffer and process is determined.
+
+@menu
+* Sending commands::
+* The debug buffer::
+* Disabling the command interpreter::
+* Using a pseudo-terminal::
+* Dismissing game prompts::
+@end menu
+
+
+@node Sending commands
+@section Sending commands
+@cindex sending commands @subentry when debugging
+
+@kindex C-c C-c
+Once the Dialog debugger has been started it is possible to send debug
+commands (either input for the game or debugger specific syntax) to
+the debug program as if they had been manually typed at a terminal.
+The command @code{dialog-debug-send-command} can be used to send a
+debug command, either the default command as defined by the
+customization variable @code{dialog-debug-send-command-default}, or by
+prompting for command to send if called with a prefix argument.
+
+@defun dialog-debug-send-command
+With a prefix argument, prompt for text to send as a command to the
+current debug process, otherwise send the value of
+@code{dialog-debug-send-command-default}.
+@end defun
+
+@defopt dialog-debug-send-command-default
+Specifies the default command to the send to the debug program.
+@end defopt
+
+When using the prompt to send a debug command, a list of preset
+commands is made available to the completion interface which will
+handle the prompt.  The value of
+@code{dialog-debug-send-command-default} determines whether the
+command entered at the prompt will become the new default command.
+
+@defopt dialog-debug-send-command-prompt-sets-default
+Determines whether the command most recently specified at the prompt
+will become the new default command by updating the value of
+@code{dialog-debug-send-command-default}.
+@end defopt
+
+@kindex C-c C-e
+It is also possible to send debug commands represented by lines of
+text in Dialog Mode buffers, using the commands
+@code{dialog-debug-send-command-from-line},
+@code{dialog-debug-send-command-from-region}, and
+@code{dialog-debug-send-command-dwim}, the last of which is bound to
+@kbd{C-c C-e} by default.
+
+@defun dialog-debug-send-command-from-line
+Send the current line as a debug command.
+@end defun
+
+@defun dialog-debug-send-command-from-region
+Send the lines from the currently active region as debug commands.
+@end defun
+
+@defun dialog-debug-send-command-dwim
+If there is an active region, send the lines from it as debug
+commands, otherwise send the current line as a debug command.
+@end defun
+
+In all cases any leading comment syntax is removed from lines before
+sending them as commands.  This allows test input to stored in the
+game's source files, for example:
+
+@example dialog
+%% west
+%% hang cloak on hook
+%% east
+%% south
+%% look at message
+@end example
+
+The customization variable @code{dialog-debug-send-command-hook} is a
+list of functions to call before the command is sent, at which time
+the current command to send is stored in the variable
+@code{dialog-debug-send-command-input}.
+
+@defopt dialog-debug-send-command-hook
+A hook which is called before sending a debug command.
+@end defopt
+
+@defvar dialog-debug-send-command-input
+Stores the current debug command being sent to the debug program.
+@end defvar
+
+@cindex command hooks @subentry for debugging
+@cindex hot-reload @subentry when debugging
+One interesting feature of the Dialog debug program is that, if game
+source files are modified while the debug program is running, the
+files are reloaded and any changes are incorporated into the game
+state.  The default value of @code{dialog-debug-send-command-hook}
+will cause a prompt to save any unsaved buffers, but the following
+example shows how to further streamline the process by automatically
+saving the current Dialog Mode buffer when the debug command being
+sent is @samp{@@replay}.  This makes sending the @samp{@@replay}
+command an equivalent of hot-reload for incorporating the latest
+buffer changes:
+
+@example lisp
+(add-hook 'dialog-debug-send-command-hook
+          (lambda ()
+            (when (and (derived-mode-p 'dialog-mode)
+                       (equal dialog-debug-send-command-input "@@replay"))
+              (save-buffer))))
+@end example
+
+
+@node The debug buffer
+@section The debug buffer
+@cindex the debug buffer @subentry debugging
+@cindex determining the current debug buffer @subentry when debugging
+
+@kindex C-c C-c
+@kindex C-c C-z
+The buffer which runs the debug process will use
+@code{dialog-debug-mode} as its major mode.  The majority of the
+default @code{comint} key-bindings are still present in this mode,
+with the exception of @kbd{C-c C-c} which is bound to
+@code{dialog-debug-send-command} (see @ref{Sending commands}) and
+@kbd{C-c C-z} which is bound to @code{quit-window}.
+
+With the exception of when @code{dialog-debug-send-command} is called
+directly from the debug buffer, any functionality which needs to refer
+to the current debug buffer or running debug process will do so by
+looking for the buffer name specified in the customization variable
+@code{dialog-debug-buffer-name}.
+
+@defopt dialog-debug-buffer-name
+Specifies the name to use when creating or looking for the Dialog
+debug buffer.
+@end defopt
+
+Renaming an existing debug buffer will effectively ``detach'' it from
+functions which are looking to use it, allowing a new debug buffer to
+be created in its place.
+
+
+@node Disabling the command interpreter
+@section Disabling the command interpreter
+@cindex disabling the command interpreter @subentry when debugging
+
+To run the debug program directly instead of as a command interpreter,
+set the value @code{dialog-debug-as-interp} to @code{nil}.  This also
+defaults command sending to store commands in the clipboard instead of
+trying to locate a debug process.
+
+@defopt dialog-debug-as-interp
+Specifies whether the debug program runs as a command interpreter.  A
+non-@code{nil} value will start the debug program as a command
+interpreter, which enables interactive debugging and sending commands
+to the game as it is running.  A value of @code{nil} means that the
+process is launched directly with no further process interaction,
+which probably only makes sense if the debug program is a graphical
+application.
+@end defopt
+
+@cindex Windows support @subentry for debugging
+@cindex AutoHotkey @subentry for debugging
+The value of @code{dialog-debug-as-interp} will default to nil when
+using Microsoft Windows because the Windows build of the debug program
+can currently only run in a graphical window and is unable to receive
+input outside of that interface.  That said, the function used to send
+a command is configurable, stored in the customization variable
+@code{dialog-debug-send-command-function}, and so it is possible to
+provide alternative means of getting a debug command into the debug
+program.
+
+@defopt dialog-debug-send-command-function
+Specifies the function which will be used to send a debug command to
+the debug program.  At the time that the function is called the value
+to be sent is stored in the variable
+@code{dialog-debug-send-command-input}.
+@end defopt
+
+As an example of custom configuration, the following example shows how
+to send commands to the Windows version of the Dialog debugger using
+AutoHotkey (available at @url{https://www.autohotkey.com/}):
+
+@example lisp
+(defconst dialog-debug-send-ahk-script
+  "
+command := EnvGet('DIALOG_DEBUG_COMMAND')
+SetTitleMatchMode 3  ; Exact match for window title.
+Try @{
+    ControlSend command '@{Enter@}',, 'Dialog Interactive Debugger'
+@}
+Catch @{
+    Exit 1
+@}
+"
+  "The AutoHotkey send command script.")
+
+(defun dialog-debug-send-command-with-ahk ()
+  "Send a command to the debug program window using AutoHotkey."
+  (let ((process-environment
+         (cons
+          (concat "DIALOG_DEBUG_COMMAND=" dialog-debug-send-command-input)
+          process-environment)))
+    (message "Sending command '%s' using AutoHotkey"
+             dialog-debug-send-command-input)
+    (unless (eq 0 (with-temp-buffer
+                    (insert dialog-debug-send-ahk-script)
+                    (call-process-region (point-min) (point-max)
+                                         "autohotkey" nil nil nil "*")))
+      (message "Failed to send command"))))
+
+(setq dialog-debug-send-command-function
+      #'dialog-debug-send-command-with-ahk)
+@end example
+
+
+@node Using a pseudo-terminal
+@section Using a pseudo-terminal
+@cindex pseudo-terminal
+@cindex using a pseudo-terminal @subentry when debugging
+
+To make the debug process work more like it does in a terminal and
+support the display of text styling, set the value of
+@code{dialog-debug-use-pty} to @code{t}.
+
+@defopt dialog-debug-use-pty
+Specifies whether the debug process runs using a pseudo-terminal.  A
+value of @code{nil} indicates to use pipes instead of a
+pseudo-terminal.  A value of @code{t} indicates to use a
+pseudo-terminal and that the function
+@code{dialog-debug-output-responder} should be added to the buffer
+local value of @code{comint-output-filter-functions} for the debug
+buffer.  Note that the debug buffer needs to be recreated for changes
+to this variable to take effect.
+@end defopt
+
+@cindex dismissing debugger prompts @subentry when debugging
+The customization variable @code{dialog-debug-use-output-responder}
+determines whether the output responder function will respond to game
+output by automatically dismissing any @samp{[more]} prompts which
+appear.  Its value can be toggled with the command
+@code{dialog-debug-toggle-output-responder}.
+
+@defopt dialog-debug-use-output-responder
+Specifies whether the @code{dialog-debug-output-responder} function
+should automatically respond to game output.
+@end defopt
+
+@defun dialog-debug-toggle-output-responder
+Toggle the current value of @code{dialog-debug-use-output-responder}.
+@end defun
+
+
+@node Dismissing game prompts
+@section Dismissing game prompts
+@cindex dismissing game prompts @subentry when debugging
+
+Any prompts which originate from the standard library are expected to
+be handled by Dialog debug extensions which are loaded during game
+development.  For example, to skip any ``yes/no'' prompts without
+waiting for input, define a new rule for the @samp{(yesno)} predicate
+which always succeeds:
+
+@example dialog
+(yesno)  %% Automatically accept yes/no prompts.
+@end example
+
+
+@node Browsing the Dialog manual
+@chapter Browsing the Dialog manual
+@cindex manual
+@cindex browsing @subentry the manual
+
+The command @code{dialog-browse-manual} will open the online version
+of the Dialog manual, the URL for which is determined by the
+customization variable @code{dialog-manual-url}.
+
+@defun dialog-browse-manual
+Open the Dialog manual in the default web-browser.  When called with a
+prefix argument use the secondary browser instead of the default one.
+@end defun
+
+@defopt dialog-manual-url
+Specifies the URL for the Dialog manual.
+@end defopt
+
+To open the manual using a different browser configure the value of
+@code{browse-url-handlers}; if configured to open via
+@code{eww-browse-url} it may be preferable to also configure the value
+of @code{eww-readable-urls} so that only the main text for each page
+will be displayed.
+
+
+@node GNU Free Documentation License
+@appendix GNU Free Documentation License
+@include doclicense.texi
+
+
+@node Keystroke Index
+@unnumbered Keystroke Index
+@printindex ky
+
+
+@node Function Index
+@unnumbered Function Index
+@printindex fn
+
+
+@node Variable Index
+@unnumbered Variable Index
+@printindex vr
+
+
+@node Index
+@unnumbered Index
+@printindex cp
+
+
+@bye

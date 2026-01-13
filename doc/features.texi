@@ -1,0 +1,21 @@
+Dialog Mode is an Emacs major mode for creating and editing Dialog
+files.  The following features are implemented:
+
+@itemize @bullet
+@item
+Syntax-highlighting.
+@item
+Indentation.
+@item
+Motion around and selection of rule definitions.
+@item
+Align support for alignment of syntax following a rule-head.
+@item
+Imenu support for topics and rule-heads.
+@item
+Outline Mode support for comments, rule-heads, and topics.
+@item
+Comint support for running the Dialog debugger.
+@item
+Flymake support.
+@end itemize

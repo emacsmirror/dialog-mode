@@ -1,0 +1,29 @@
+Assuming that the Dialog Mode package has been installed by a package
+manager and will be auto-loaded, the following example demonstrates
+how to configure some basic settings, and enable some optional
+features:
+
+@example lisp
+(with-eval-after-load 'dialog-mode
+  ;; Configure indentation, fill-column, and page-delimiter to match
+  ;; the standard library.
+  (add-hook 'dialog-mode-hook
+            (lambda ()
+              (indent-tabs-mode)
+              (setq fill-column 79)
+              (setq-local page-delimiter
+                          (concat "^" (make-string fill-column ?%)))))
+
+  ;; Add the Imenu menu to the menu-bar.
+  (add-hook 'dialog-mode-hook #'imenu-add-menubar-index)
+
+  ;; Bind a key for easier access to Imenu.
+  (define-key dialog-mode-map (kbd "C-c C-j") #'imenu)
+
+  ;; Revert to the old key-binding for M-q.
+  (define-key dialog-mode-map (kbd "M-q") #'fill-paragraph))
+
+;; Enable Speedbar support for Dialog files.
+(with-eval-after-load 'speedbar
+  (speedbar-add-supported-extension ".dg"))
+@end example

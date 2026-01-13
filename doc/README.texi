@@ -1,0 +1,18 @@
+\input texinfo
+@c %**start of header
+@paragraphindent 0
+@c %**end of header
+
+@include features.texi
+
+See the manual for full details.
+
+@unnumberedsec Installation
+
+@include installation.texi
+
+@unnumberedsec Example configuration
+
+@include example-configuration.texi
+
+@bye

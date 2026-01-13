@@ -1,0 +1,32 @@
+The recommended way to install the package is to use an Emacs package
+manager.  Using this method should also install the pre-built Info
+manual.
+
+To install the package from MELPA, follow the package archive setup
+instructions available at @url{https://melpa.org/} and install the
+package named ``dialog-mode''.
+
+Alternatively, the development repository can be cloned to a location
+which is present in the Emacs @code{load-path} and made available to
+use.
+
+To clone the repository to a local sub-directory:
+
+@example sh
+git clone https://git.sr.ht/~mew/dialog-mode
+@end example
+
+The value of @code{load-path} can be modified in the Emacs
+configuration, although such a change will need to placed before any
+actions which attempt to load the package.  The following example
+shows how to load package, assuming that the repository has been
+cloned within a directory named "manual-packages" within the user's
+".emacs.d" directory:
+
+@example lisp
+;; Add the package directory to the load path.
+(add-to-list 'load-path "~/.emacs.d/manual-packages/dialog-mode")
+
+;; Load the package.
+(require 'dialog-mode)
+@end example
