@@ -1328,8 +1328,13 @@ prompt for the command to send instead of using the default."
            dialog-debug-send-command-default)))
     (when (and prompt dialog-debug-send-command-prompt-sets-default)
       (setq dialog-debug-send-command-default dialog-debug-send-command-input))
-    (run-hooks 'dialog-debug-send-command-hook)
-    (funcall dialog-debug-send-command-function)))
+    ;; Override the debug buffer name with the current buffer name if this
+    ;; command is being used from a `dialog-debug-mode' buffer.
+    (let ((dialog-debug-buffer-name (if (derived-mode-p 'dialog-debug-mode)
+                                        (buffer-name)
+                                      dialog-debug-buffer-name)))
+      (run-hooks 'dialog-debug-send-command-hook)
+      (funcall dialog-debug-send-command-function))))
 
 (defun dialog-debug-send-command-from-line (&optional no-error)
   "Send the current line as a command to the debug program.
