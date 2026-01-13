@@ -1649,7 +1649,12 @@ REPORT-FN is Flymake's callback function."
           (cond
            ((dialog--in-comment-p))
            ((eq (char-after (match-beginning 0)) ?#)
-            (setq topic (match-string-no-properties 0)))
+            ;; Store the current topic and add it to the index.
+            (push (cons (setq topic (match-string-no-properties 0))
+                        (if imenu-use-markers
+                            (copy-marker (point) t)
+                          (point)))
+                  index))
            (t
             (end-of-line)
             ;; Move out of a comment.
