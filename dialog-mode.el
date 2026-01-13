@@ -22,13 +22,6 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-;;; News:
-
-;; Version 1.0.0 (????-??-??)
-;; ==========================
-
-;; Initial release.
-
 ;;; Commentary:
 
 ;; Dialog Mode is an Emacs major mode for creating and editing Dialog files.

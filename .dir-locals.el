@@ -2,6 +2,8 @@
 ;;; For more information see (info "(emacs) Directory Variables")
 
 ((nil . ((ispell-local-dictionary . "en_US")))
+ (change-log-mode . ((mode . outline)
+                     (fill-column . 70)))
  (dialog-mode . ((fill-column . 79)
                  (indent-tabs-mode . t)))
  (emacs-lisp-mode . ((fill-column . 80)
