@@ -1065,7 +1065,7 @@ after toggling indentation and moving point to the end of the line."
 ;;;; Align
 
 (defcustom dialog-align-rules-list
-  `((dialog-assignment
+  `((dialog-rule-body
      (regexp   . ,#'dialog-align-rule-match)
      (separate . group)
      (tab-stop . t)
