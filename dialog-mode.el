@@ -48,9 +48,6 @@
 ;;   `dialog-toggle-indent' {C-c TAB}
 ;;     Add or remove indentation on the current line.
 
-;;   `dialog-toggle-indent-and-newline' {C-c RET}
-;;     Add or remove indentation on the current line and then insert a newline.
-
 ;;   `dialog-up-block' {C-c C-u}
 ;;     Move point to the beginning of the current block.
 
@@ -1051,16 +1048,6 @@ indentation column."
   ;; Move to the current indentation column when inside indentation.
   (when (<= (current-column) (current-indentation))
     (back-to-indentation)))
-
-(defun dialog-toggle-indent-and-newline (arg interactive)
-  "Toggle indentation for the current line and insert a newline.
-
-The `newline' function is called interactively with ARG and INTERACTIVE
-after toggling indentation and moving point to the end of the line."
-  (interactive "*P\np")  ; Matched to interactive spec for `newline'.
-  (dialog-toggle-indent)
-  (end-of-line)
-  (funcall-interactively #'newline arg interactive))
 
 ;;;; Align
 
@@ -1713,7 +1700,6 @@ REPORT-FN is Flymake's callback function."
     (define-key map (kbd "C-c C-c") #'dialog-debug-send-command)
     (define-key map (kbd "C-c C-e") #'dialog-debug-send-command-dwim)
     (define-key map (kbd "C-c C-i") #'dialog-toggle-indent)
-    (define-key map (kbd "C-c C-m") #'dialog-toggle-indent-and-newline)
     (define-key map (kbd "C-c C-u") #'dialog-up-block)
     (define-key map (kbd "C-c C-z") #'dialog-debug-run)
     map))
@@ -1732,8 +1718,6 @@ REPORT-FN is Flymake's callback function."
     "---"
     ["Toggle indentation" dialog-toggle-indent
      :help "Toggle the indentation on the current line"]
-    ["Toggle indentation and insert newline" dialog-toggle-indent-and-newline
-     :help "Toggle the indentation on the current line and insert a newline"]
     "---"
     ["Jump to place" imenu
      :help "Jump to a place of significance in the buffer"]

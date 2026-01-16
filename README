@@ -15,9 +15,6 @@ The following commands are bound in the major-mode keymap:
   `dialog-toggle-indent' {C-c TAB}
     Add or remove indentation on the current line.
 
-  `dialog-toggle-indent-and-newline' {C-c RET}
-    Add or remove indentation on the current line and then insert a newline.
-
   `dialog-up-block' {C-c C-u}
     Move point to the beginning of the current block.
 
