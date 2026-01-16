@@ -1787,7 +1787,8 @@ REPORT-FN is Flymake's callback function."
   (setq align-mode-rules-list dialog-align-rules-list)
   (setq imenu-create-index-function #'dialog--create-imenu-index)
   (setq-local beginning-of-defun-function #'dialog-beginning-of-defun)
-  (setq-local comment-start "%%")
+  (setq-local comment-start "%% ")
+  (setq-local comment-start-skip (rx "%%" (0+ (syntax ?-))))
   (setq-local end-of-defun-function #'dialog-end-of-defun)
   (setq-local fill-paragraph-function #'dialog-fill-paragraph)
   (setq-local font-lock-defaults '((dialog-font-lock-keywords
