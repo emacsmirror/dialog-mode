@@ -362,7 +362,7 @@
 (defconst dialog-mode-syntax-table
   (let ((table (make-syntax-table)))
     ;; Set line comment start and end.
-    (modify-syntax-entry ?% ". 124" table)
+    (modify-syntax-entry ?% ". 12" table)
     (modify-syntax-entry ?\n ">" table)
     ;; Set allowed symbol constituents.
     (modify-syntax-entry ?! "_" table)
