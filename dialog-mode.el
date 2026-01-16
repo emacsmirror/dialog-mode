@@ -1480,6 +1480,19 @@ default browser."
       (funcall browse-url-secondary-browser-function dialog-manual-url)
     (browse-url dialog-manual-url)))
 
+;;;; Electric-indent
+
+(defun dialog-electric-indent (char)
+  "Return whether inserting CHAR will re-indent the current line.
+
+If a newline character is inserted on a line which begins in column 0,
+do not re-indent the line."
+  (and (= char ?\C-j)
+       (save-excursion
+         (forward-char -1)
+         (zerop (current-indentation)))
+       'no-indent))
+
 ;;;; Filling
 
 (defun dialog-do-autofill ()
@@ -1799,6 +1812,7 @@ REPORT-FN is Flymake's callback function."
   (setq-local normal-auto-fill-function #'dialog-do-autofill)
   (setq-local outline-level #'dialog-outline-level)
   (setq-local outline-regexp (dialog-rx outline))
+  (add-hook 'electric-indent-functions #'dialog-electric-indent nil t)
   (add-hook 'flymake-diagnostic-functions #'dialog-flymake nil t)
   ;; Flymake is using source files rather than buffers.
   (setq-local flymake-no-changes-timeout nil))
