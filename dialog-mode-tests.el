@@ -595,6 +595,948 @@ Match when the escape character is escaped."
     (forward-line)
     (should (dialog--rule-uses-topic-p))))
 
+;;;; Paragraph motion
+
+(ert-deftest dialog-forward-paragraph-through-comments ()
+  "Test paragraph motion forwards through comments."
+  (dialog-mode-tests--with-temp-buffer
+      "
+(rule head)
+
+        (if) (condition) (then)
+
+                %%% 1
+                %%  2
+                %%% 3
+                %%% 31
+                %%  4
+                %%  41
+                %%  42
+                aa %%  5
+                %%  6
+
+                %%  7
+                %%  71
+                 %% 72
+               %%   73
+                %%  74
+                %%  75
+
+        (endif)
+
+"
+    (goto-char (point-min))
+    (dolist (string (list "(rule head)"
+                          "(then)"
+                          "1"
+                          "2"
+                          "31"
+                          "42"
+                          "5"
+                          "6"
+                          "71"
+                          "72"
+                          "73"
+                          "75"
+                          "(endif)"
+                          "(endif)"))
+      (dialog-forward-paragraph)
+      (should (equal (buffer-substring-no-properties
+                      (save-excursion
+                        (forward-sexp -1)
+                        (point))
+                      (point))
+                     string)))))
+
+(ert-deftest dialog-forward-paragraph-through-comments-2 ()
+  "Test paragraph motion forwards through comments.
+
+Move 2 paragraphs at a time."
+  (dialog-mode-tests--with-temp-buffer
+      "
+(rule head)
+
+        (if) (condition) (then)
+
+                %%% 1
+                %%  2
+                %%% 3
+                %%% 31
+                %%  4
+                %%  41
+                %%  42
+                aa %%  5
+                %%  6
+
+                %%  7
+                %%  71
+                 %% 72
+               %%   73
+                %%  74
+                %%  75
+
+        (endif)
+
+"
+    (goto-char (point-min))
+    (dolist (string (list "(then)"
+                          "2"
+                          "42"
+                          "6"
+                          "72"
+                          "75"
+                          "(endif)"
+                          "(endif)"))
+      (dialog-forward-paragraph 2)
+      (should (equal (buffer-substring-no-properties
+                      (save-excursion
+                        (forward-sexp -1)
+                        (point))
+                      (point))
+                     string)))))
+
+(ert-deftest dialog-backward-paragraph-through-comments ()
+  "Test paragraph motion backwards through comments."
+  (dialog-mode-tests--with-temp-buffer
+      "
+(rule head)
+
+        (if) (condition) (then)
+
+                %%% 1
+                %%  2
+                %%% 3
+                %%% 31
+                %%  4
+                %%  41
+                %%  42
+                aa %%  5
+                %%  6
+
+                %%  7
+                %%  71
+                 %% 72
+               %%   73
+                %%  74
+                %%  75
+
+        (endif)
+
+"
+    (goto-char (point-max))
+    (dolist (string (list "(endif)"
+                          "74"
+                          "73"
+                          "72"
+                          "7"
+                          "6"
+                          "5"
+                          "4"
+                          "3"
+                          "2"
+                          "1"
+                          "(then)"
+                          "(rule head)"
+                          "(rule head)"))
+      (dialog-forward-paragraph -1)
+      (save-excursion
+        (end-of-line)
+        (should (equal (buffer-substring-no-properties
+                        (save-excursion
+                          (forward-sexp -1)
+                          (point))
+                        (point))
+                       string))))))
+
+(ert-deftest dialog-backward-paragraph-through-comments-2 ()
+  "Test paragraph motion backwards through comments.
+
+Move 2 paragraphs at a time."
+  (dialog-mode-tests--with-temp-buffer
+      "
+(rule head)
+
+        (if) (condition) (then)
+
+                %%% 1
+                %%  2
+                %%% 3
+                %%% 31
+                %%  4
+                %%  41
+                %%  42
+                aa %%  5
+                %%  6
+
+                %%  7
+                %%  71
+                 %% 72
+               %%   73
+                %%  74
+                %%  75
+
+        (endif)
+
+"
+    (goto-char (point-max))
+    (dolist (string (list "74"
+                          "72"
+                          "6"
+                          "4"
+                          "2"
+                          "(then)"
+                          "(rule head)"
+                          "(rule head)"))
+      (dialog-forward-paragraph -2)
+      (save-excursion
+        (end-of-line)
+        (should (equal (buffer-substring-no-properties
+                        (save-excursion
+                          (forward-sexp -1)
+                          (point))
+                        (point))
+                       string))))))
+
+(ert-deftest dialog-forward-paragraph-through-syntax ()
+  "Test paragraph motion forwards through syntax."
+  (dialog-mode-tests--with-temp-buffer
+      "
+(descr *)
+
+        (if) (message has been trampled) (then)
+                The message has been carelessly trampled, making it
+                difficult to read. You can just distinguish the
+                words...
+                %% comment 1
+                (par)
+                (bold)\*\*\* You have lost \*\*\*(roman)
+        (else)
+                (increase score by 1)
+                The message, neatly marked in the sawdust, reads...
+                %% comment 2
+                (par)
+                (bold)\*\*\* You have won \*\*\*(roman)
+                (testing)
+        (endif)
+        (game over)
+
+"
+    (let (dialog-paragraph-delimiter)
+      (goto-char (point-min))
+      (dolist (string (list "(descr *)"
+                            "(then)"
+                            "words..."
+                            "1"
+                            "***(roman)"
+                            "(else)"
+                            "reads..."
+                            "2"
+                            "(testing)"
+                            "(game over)"
+                            "(game over)"))
+        (dialog-forward-paragraph)
+        (should (equal (buffer-substring-no-properties
+                        (save-excursion
+                          (forward-sexp -1)
+                          (point))
+                        (point))
+                       string))))))
+
+(ert-deftest dialog-forward-paragraph-through-syntax-2 ()
+  "Test paragraph motion forwards through syntax.
+
+Move 2 paragraphs at a time."
+  (dialog-mode-tests--with-temp-buffer
+      "
+(descr *)
+
+        (if) (message has been trampled) (then)
+                The message has been carelessly trampled, making it
+                difficult to read. You can just distinguish the
+                words...
+                %% comment 1
+                (par)
+                (bold)\*\*\* You have lost \*\*\*(roman)
+        (else)
+                (increase score by 1)
+                The message, neatly marked in the sawdust, reads...
+                %% comment 2
+                (par)
+                (bold)\*\*\* You have won \*\*\*(roman)
+                (testing)
+        (endif)
+        (game over)
+
+"
+    (let (dialog-paragraph-delimiter)
+      (goto-char (point-min))
+      (dolist (string (list "(then)"
+                            "1"
+                            "(else)"
+                            "2"
+                            "(game over)"
+                            "(game over)"))
+        (dialog-forward-paragraph 2)
+        (should (equal (buffer-substring-no-properties
+                        (save-excursion
+                          (forward-sexp -1)
+                          (point))
+                        (point))
+                       string))))))
+
+(ert-deftest dialog-backward-paragraph-through-syntax ()
+  "Test paragraph motion backwards through syntax."
+  (dialog-mode-tests--with-temp-buffer
+      "
+(descr *)
+
+        (if) (message has been trampled) (then)
+                The message has been carelessly trampled, making it
+                difficult to read. You can just distinguish the
+                words...
+                %% comment 1
+                (par)
+                (bold)\*\*\* You have lost \*\*\*(roman)
+        (else)
+                (increase score by 1)
+                The message, neatly marked in the sawdust, reads...
+                %% comment 2
+                (par)
+                (bold)\*\*\* You have won \*\*\*(roman)
+                (testing)
+        (endif)
+        (game over)
+
+"
+    (let (dialog-paragraph-delimiter)
+      (goto-char (point-max))
+      (dolist (string (list "(endif)"
+                            "(par)"
+                            "2"
+                            "(increase score by 1)"
+                            "(else)"
+                            "(par)"
+                            "1"
+                            "it"
+                            "(then)"
+                            "(descr *)"
+                            "(descr *)"))
+        (dialog-forward-paragraph -1)
+        (save-excursion
+          (end-of-line)
+          (should (equal (buffer-substring-no-properties
+                          (save-excursion
+                            (forward-sexp -1)
+                            (point))
+                          (point))
+                         string)))))))
+
+(ert-deftest dialog-backward-paragraph-through-syntax-2 ()
+  "Test paragraph motion backwards through syntax.
+
+Move 2 paragraphs at a time."
+  (dialog-mode-tests--with-temp-buffer
+      "
+(descr *)
+
+        (if) (message has been trampled) (then)
+                The message has been carelessly trampled, making it
+                difficult to read. You can just distinguish the
+                words...
+                %% comment 1
+                (par)
+                (bold)\*\*\* You have lost \*\*\*(roman)
+        (else)
+                (increase score by 1)
+                The message, neatly marked in the sawdust, reads...
+                %% comment 2
+                (par)
+                (bold)\*\*\* You have won \*\*\*(roman)
+                (testing)
+        (endif)
+        (game over)
+
+"
+    (let (dialog-paragraph-delimiter)
+      (goto-char (point-max))
+      (dolist (string (list "(par)"
+                            "(increase score by 1)"
+                            "(par)"
+                            "it"
+                            "(descr *)"
+                            "(descr *)"))
+        (dialog-forward-paragraph -2)
+        (save-excursion
+          (end-of-line)
+          (should (equal (buffer-substring-no-properties
+                          (save-excursion
+                            (forward-sexp -1)
+                            (point))
+                          (point))
+                         string)))))))
+
+(ert-deftest dialog-forward-paragraph-through-syntax-default-delimiter ()
+  "Test paragraph motion forwards through syntax with default delimiter."
+  (dialog-mode-tests--with-temp-buffer
+      "
+(descr *)
+
+        (if) (message has been trampled) (then)
+                The message has been carelessly trampled, making it
+                difficult to read. You can just distinguish the
+                words...
+                %% comment 1
+                (par)
+                (bold)\*\*\* You have lost \*\*\*(roman)
+        (else)
+                (increase score by 1)
+                The message, neatly marked in the sawdust, reads...
+                %% comment 2
+                (par)
+                (bold)\*\*\* You have won \*\*\*(roman)
+                (testing)
+        (endif)
+        (game over)
+
+"
+    (goto-char (point-min))
+    (dolist (string (list "(descr *)"
+                          "(then)"
+                          "words..."
+                          "1"
+                          "(par)"
+                          "***(roman)"
+                          "(else)"
+                          "(increase score by 1)"
+                          "reads..."
+                          "2"
+                          "(par)"
+                          "***(roman)"
+                          "(testing)"
+                          "(endif)"
+                          "(game over)"
+                          "(game over)"))
+      (dialog-forward-paragraph)
+      (should (equal (buffer-substring-no-properties
+                      (save-excursion
+                        (forward-sexp -1)
+                        (point))
+                      (point))
+                     string)))))
+
+(ert-deftest dialog-backward-paragraph-through-syntax-default-delimiter ()
+  "Test paragraph motion backwards through syntax with default delimiter."
+  (dialog-mode-tests--with-temp-buffer
+      "
+(descr *)
+
+        (if) (message has been trampled) (then)
+                The message has been carelessly trampled, making it
+                difficult to read. You can just distinguish the
+                words...
+                %% comment 1
+                (par)
+                (bold)\*\*\* You have lost \*\*\*(roman)
+        (else)
+                (increase score by 1)
+                The message, neatly marked in the sawdust, reads...
+                %% comment 2
+                (par)
+                (bold)\*\*\* You have won \*\*\*(roman)
+                (testing)
+        (endif)
+        (game over)
+
+"
+    (goto-char (point-max))
+    (dolist (string (list "(game over)"
+                          "(endif)"
+                          "(testing)"
+                          "***(roman)"
+                          "(par)"
+                          "2"
+                          "reads..."
+                          "(increase score by 1)"
+                          "(else)"
+                          "***(roman)"
+                          "(par)"
+                          "1"
+                          "it"
+                          "(then)"
+                          "(descr *)"
+                          "(descr *)"))
+      (dialog-forward-paragraph -1)
+      (save-excursion
+        (end-of-line)
+        (should (equal (buffer-substring-no-properties
+                        (save-excursion
+                          (forward-sexp -1)
+                          (point))
+                        (point))
+                       string))))))
+
+(ert-deftest dialog-forward-paragraph-through-syntax-line-delimiter ()
+  "Test paragraph motion forwards through syntax with a line delimiter."
+  (dialog-mode-tests--with-temp-buffer
+      "
+(descr *)
+
+        (if) (message has been trampled) (then)
+                The message has been carelessly trampled, making it
+                difficult to read. You can just distinguish the
+                words...
+                %% comment 1
+                (par)
+                (bold)\*\*\* You have lost \*\*\*(roman)
+        (else)
+                (increase score by 1)
+                The message, neatly marked in the sawdust, reads...
+                %% comment 2
+                (par)
+                (bold)\*\*\* You have won \*\*\*(roman)
+                (testing)
+        (endif)
+        (game over)
+
+"
+    (let ((dialog-paragraph-delimiter t))
+      (goto-char (point-min))
+      (dolist (string (list "(descr *)"
+                            "(then)"
+                            "it"
+                            "the"
+                            "words..."
+                            "1"
+                            "(par)"
+                            "***(roman)"
+                            "(else)"
+                            "(increase score by 1)"
+                            "reads..."
+                            "2"
+                            "(par)"
+                            "***(roman)"
+                            "(testing)"
+                            "(endif)"
+                            "(game over)"
+                            "(game over)"))
+        (dialog-forward-paragraph)
+        (should (equal (buffer-substring-no-properties
+                        (save-excursion
+                          (forward-sexp -1)
+                          (point))
+                        (point))
+                       string))))))
+
+(ert-deftest dialog-forward-paragraph-through-syntax-line-delimiter-2 ()
+  "Test paragraph motion forwards through syntax with a line delimiter.
+
+Move 2 paragraphs at a time."
+  (dialog-mode-tests--with-temp-buffer
+      "
+(descr *)
+
+        (if) (message has been trampled) (then)
+                The message has been carelessly trampled, making it
+                difficult to read. You can just distinguish the
+                words...
+                %% comment 1
+                (par)
+                (bold)\*\*\* You have lost \*\*\*(roman)
+        (else)
+                (increase score by 1)
+                The message, neatly marked in the sawdust, reads...
+                %% comment 2
+                (par)
+                (bold)\*\*\* You have won \*\*\*(roman)
+                (testing)
+        (endif)
+        (game over)
+
+"
+    (let ((dialog-paragraph-delimiter t))
+      (goto-char (point-min))
+      (dolist (string (list "(then)"
+                            "the"
+                            "1"
+                            "***(roman)"
+                            "(increase score by 1)"
+                            "2"
+                            "***(roman)"
+                            "(endif)"
+                            "(game over)"
+                            "(game over)"))
+        (dialog-forward-paragraph 2)
+        (should (equal (buffer-substring-no-properties
+                        (save-excursion
+                          (forward-sexp -1)
+                          (point))
+                        (point))
+                       string))))))
+
+(ert-deftest dialog-backward-paragraph-through-syntax-line-delimiter ()
+  "Test paragraph motion backwards through syntax with a line delimiter."
+  (dialog-mode-tests--with-temp-buffer
+      "
+(descr *)
+
+        (if) (message has been trampled) (then)
+                The message has been carelessly trampled, making it
+                difficult to read. You can just distinguish the
+                words...
+                %% comment 1
+                (par)
+                (bold)\*\*\* You have lost \*\*\*(roman)
+        (else)
+                (increase score by 1)
+                The message, neatly marked in the sawdust, reads...
+                %% comment 2
+                (par)
+                (bold)\*\*\* You have won \*\*\*(roman)
+                (testing)
+        (endif)
+        (game over)
+
+"
+    (let ((dialog-paragraph-delimiter t))
+      (goto-char (point-max))
+      (dolist (string (list "(game over)"
+                            "(endif)"
+                            "(testing)"
+                            "***(roman)"
+                            "(par)"
+                            "2"
+                            "reads..."
+                            "(increase score by 1)"
+                            "(else)"
+                            "***(roman)"
+                            "(par)"
+                            "1"
+                            "words..."
+                            "the"
+                            "it"
+                            "(then)"
+                            "(descr *)"
+                            "(descr *)"))
+        (dialog-forward-paragraph -1)
+        (save-excursion
+          (end-of-line)
+          (should (equal (buffer-substring-no-properties
+                          (save-excursion
+                            (forward-sexp -1)
+                            (point))
+                          (point))
+                         string)))))))
+
+(ert-deftest dialog-backward-paragraph-through-syntax-line-delimiter-2 ()
+  "Test paragraph motion backwards through syntax with a line delimiter.
+
+Move 2 paragraphs at a time."
+  (dialog-mode-tests--with-temp-buffer
+      "
+(descr *)
+
+        (if) (message has been trampled) (then)
+                The message has been carelessly trampled, making it
+                difficult to read. You can just distinguish the
+                words...
+                %% comment 1
+                (par)
+                (bold)\*\*\* You have lost \*\*\*(roman)
+        (else)
+                (increase score by 1)
+                The message, neatly marked in the sawdust, reads...
+                %% comment 2
+                (par)
+                (bold)\*\*\* You have won \*\*\*(roman)
+                (testing)
+        (endif)
+        (game over)
+
+"
+    (let ((dialog-paragraph-delimiter t))
+      (goto-char (point-max))
+      (dolist (string (list "(endif)"
+                            "***(roman)"
+                            "2"
+                            "(increase score by 1)"
+                            "***(roman)"
+                            "1"
+                            "the"
+                            "(then)"
+                            "(descr *)"
+                            "(descr *)"))
+        (dialog-forward-paragraph -2)
+        (save-excursion
+          (end-of-line)
+          (should (equal (buffer-substring-no-properties
+                          (save-excursion
+                            (forward-sexp -1)
+                            (point))
+                          (point))
+                         string)))))))
+
+(ert-deftest dialog-forward-paragraph-column-zero ()
+  "Test paragraph motion forwards through syntax which start in column 0."
+  (dialog-mode-tests--with-temp-buffer
+      "
+(rule head)
+aaa
+bbb
+#topic1
+#topic2
+%% comment 1
+%% comment 2
+ccc
+ddd
+(rule head)
+
+"
+    (goto-char (point-min))
+    (dolist (string (list "(rule head)"
+                          "aaa"
+                          "bbb"
+                          "#topic1"
+                          "#topic2"
+                          "2"
+                          "ccc"
+                          "ddd"
+                          "(rule head)"
+                          "(rule head)"))
+      (dialog-forward-paragraph)
+      (should (equal (buffer-substring-no-properties
+                      (save-excursion
+                        (forward-sexp -1)
+                        (point))
+                      (point))
+                     string)))))
+
+(ert-deftest dialog-forward-paragraph-column-zero-2 ()
+  "Test paragraph motion forwards through syntax which start in column 0.
+
+Move 2 paragraphs at a time."
+  (dialog-mode-tests--with-temp-buffer
+      "
+(rule head)
+aaa
+bbb
+#topic1
+#topic2
+%% comment 1
+%% comment 2
+ccc
+ddd
+(rule head)
+
+"
+    (goto-char (point-min))
+    (dolist (string (list "aaa"
+                          "#topic1"
+                          "2"
+                          "ddd"
+                          "(rule head)"
+                          "(rule head)"))
+      (dialog-forward-paragraph 2)
+      (should (equal (buffer-substring-no-properties
+                      (save-excursion
+                        (forward-sexp -1)
+                        (point))
+                      (point))
+                     string)))))
+
+(ert-deftest dialog-backward-paragraph-column-zero ()
+  "Test paragraph motion backwards through syntax which start in column 0."
+  (dialog-mode-tests--with-temp-buffer
+      "
+(rule head)
+aaa
+bbb
+#topic1
+#topic2
+%% comment 1
+%% comment 2
+ccc
+ddd
+(rule head)
+
+"
+    (goto-char (point-max))
+    (dolist (string (list "(rule head)"
+                          "ddd"
+                          "ccc"
+                          "1"
+                          "#topic2"
+                          "#topic1"
+                          "bbb"
+                          "aaa"
+                          "(rule head)"
+                          "(rule head)"))
+      (dialog-forward-paragraph -1)
+      (save-excursion
+        (end-of-line)
+        (should (equal (buffer-substring-no-properties
+                        (save-excursion
+                          (forward-sexp -1)
+                          (point))
+                        (point))
+                       string))))))
+
+(ert-deftest dialog-backward-paragraph-column-zero-2 ()
+  "Test paragraph motion backwards through syntax which start in column 0.
+
+Move 2 paragraphs at a time."
+  (dialog-mode-tests--with-temp-buffer
+      "
+(rule head)
+aaa
+bbb
+#topic1
+#topic2
+%% comment 1
+%% comment 2
+ccc
+ddd
+(rule head)
+
+"
+    (goto-char (point-max))
+    (dolist (string (list "ddd"
+                          "1"
+                          "#topic1"
+                          "aaa"
+                          "(rule head)"
+                          "(rule head)"))
+      (dialog-forward-paragraph -2)
+      (save-excursion
+        (end-of-line)
+        (should (equal (buffer-substring-no-properties
+                        (save-excursion
+                          (forward-sexp -1)
+                          (point))
+                        (point))
+                       string))))))
+
+(ert-deftest dialog-forward-paragraph-mid-line ()
+  "Test paragraph motion forwards starting in the middle of the line."
+  (dialog-mode-tests--with-temp-buffer
+      "
+(rule head)
+        (test)
+        %% comment 1
+        %% comment 2
+        aaa
+        bbb
+(rule head)
+
+"
+    (goto-char (point-min))
+    (dolist (string (list "(rule head)"
+                          "(test)"
+                          "2"
+                          "bbb"
+                          "(rule head)"))
+      (forward-line)
+      (end-of-line)
+      (forward-char -2)
+      (dialog-forward-paragraph)
+      (should (equal (buffer-substring-no-properties
+                      (save-excursion
+                        (forward-sexp -1)
+                        (point))
+                      (point))
+                     string)))))
+
+(ert-deftest dialog-forward-paragraph-mid-line-2 ()
+  "Test paragraph motion forwards starting in the middle of the line.
+
+Move 2 paragraphs at a time."
+  (dialog-mode-tests--with-temp-buffer
+      "
+(rule head)
+        (test)
+        %% comment 1
+        %% comment 2
+        aaa
+        bbb
+(rule head)
+
+"
+    (goto-char (point-min))
+    (dolist (string (list "(test)"
+                          "bbb"
+                          "(rule head)"))
+      (forward-line)
+      (end-of-line)
+      (forward-char -2)
+      (dialog-forward-paragraph 2)
+      (should (equal (buffer-substring-no-properties
+                      (save-excursion
+                        (forward-sexp -1)
+                        (point))
+                      (point))
+                     string)))))
+
+(ert-deftest dialog-backward-paragraph-mid-line ()
+  "Test paragraph motion backwards starting in the middle of the line."
+  (dialog-mode-tests--with-temp-buffer
+      "
+(rule head)
+        (test)
+        %% comment 1
+        %% comment 2
+        aaa
+        bbb
+(rule head)
+"
+    (goto-char (point-max))
+    (dolist (string (list "(rule head)"
+                          "aaa"
+                          "1"
+                          "(test)"
+                          "(rule head)"))
+      (forward-line -1)
+      (end-of-line)
+      (forward-char -2)
+      (dialog-forward-paragraph -1)
+      (save-excursion
+        (end-of-line)
+        (should (equal (buffer-substring-no-properties
+                        (save-excursion
+                          (forward-sexp -1)
+                          (point))
+                        (point))
+                       string))))))
+
+(ert-deftest dialog-backward-paragraph-mid-line-2 ()
+  "Test paragraph motion backwards starting in the middle of the line.
+
+Move 2 paragraphs at a time."
+  (dialog-mode-tests--with-temp-buffer
+      "
+(rule head)
+        (test)
+        %% comment 1
+        %% comment 2
+        aaa
+        bbb
+(rule head)
+"
+    (goto-char (point-max))
+    (dolist (string (list "aaa"
+                          "(test)"
+                          "(rule head)"))
+      (forward-line -1)
+      (end-of-line)
+      (forward-char -2)
+      (dialog-forward-paragraph -2)
+      (save-excursion
+        (end-of-line)
+        (should (equal (buffer-substring-no-properties
+                        (save-excursion
+                          (forward-sexp -1)
+                          (point))
+                        (point))
+                       string))))))
+
 ;;;; Font-lock
 
 (require 'ert-font-lock nil 'noerror)

@@ -65,16 +65,22 @@
 ;;     debug program, otherwise send the current line.  In both cases any comment
 ;;     syntax at the start of the line is removed.  Empty lines are not sent.
 
+;;   `dialog-forward-paragraph' {C-c C-n}
+;;     Move forwards by paragraph.
+
+;;   `dialog-backward-paragraph' {C-c C-p}
+;;     Move backwards by paragraph.
+
 ;;   `dialog-debug-run' {C-c C-z}
 ;;     Start the debugger as `comint' process and pop to its buffer.  If the
 ;;     process already exists, just pop to its buffer.
 
-;; When using `fill-paragraph' the effects are currently restricted to the
-;; current line.  This restriction is in place because general text and Dialog
-;; syntax are likely both present on contiguous lines of varying length at the
-;; same indentation level.  To fill multiple lines, select the region first.
-;; For Emacs 30 and newer, the default key-binding for {M-q} will call the
-;; function `prog-fill-reindent-defun' instead of `fill-paragraph'.  Calling
+;; The value of `dialog-paragraph-delimiter' alters the behavior of
+;; `dialog-forward-paragraph', `dialog-backward-paragraph', and
+;; `fill-paragraph'.  The default value attempts to limit motion and filling to
+;; buffer positions which do not include Dialog syntax.  For Emacs 30 and newer,
+;; the default key-binding for {M-q} will call the function
+;; `prog-fill-reindent-defun' instead of `fill-paragraph'.  Calling
 ;; `prog-fill-reindent-defun' will re-indent all lines within the current rule
 ;; but it is recommended to revert the key-binding to call `fill-paragraph'
 ;; instead, restoring the easier way to fill lines within the active region.
@@ -531,6 +537,12 @@ bind special completion commands to the space and \"?\" keys."
     (define-key minibuffer-local-completion-map "?" #'self-insert-command)
     (apply #'completing-read args)))
 
+(defun dialog--empty-line-p ()
+  "Return a non-nil value when the current line is empty."
+  (save-excursion
+    (beginning-of-line)
+    (looking-at-p (rx line-start (0+ whitespace) line-end))))
+
 (defun dialog--forward-prefix-chars ()
   "Move forwards over characters with prefix syntax."
   (unless (eobp)
@@ -542,6 +554,10 @@ bind special completion commands to the space and \"?\" keys."
 
 Prefer existing parser state PPSS over calling `syntax-ppss'."
   (nth 4 (or ppss (syntax-ppss))))
+
+(defun dialog--line-has-comment-p ()
+  "Return a non-nil value when the current line has a comment on it."
+  (save-excursion (end-of-line) (dialog--in-comment-p)))
 
 (defun dialog--list-end (start)
   "Return the end position of the list which opens at position START."
@@ -1482,31 +1498,11 @@ do not re-indent the line."
 
 ;;;; Filling
 
-(defun dialog-do-autofill ()
-  "Dialog specific function for `auto-fill-mode'."
-  (let ((fill-forward-paragraph-function (lambda (arg)
-                                           (forward-line arg)
-                                           0)))
+(defun dialog-do-auto-fill ()
+  "Dialog specific auto-fill function."
+  ;; Stop `default-indent-new-line' starting a line in column zero.
+  (let ((indent-line-function #'indent-relative))
     (do-auto-fill)))
-
-(defun dialog-fill-paragraph (&optional justify)
-  "Dialog specific function for filling paragraphs.
-
-If JUSTIFY is non-nil, justify as well."
-  (interactive "P")
-  (save-excursion
-    (end-of-line)
-    (if (dialog--in-comment-p)
-        ;; Use default fill for comments.
-        (fill-comment-paragraph justify)
-      ;; Restrict the fill to the current line.
-      ;; TODO: Find a safe way to identify a "paragraph".  It isn't obvious how
-      ;; to differentiate between text and code - using the indentation level
-      ;; doesn't work well in practice.
-      (save-restriction
-        (narrow-to-region (line-beginning-position) (point))
-        (fill-paragraph justify)
-        t))))
 
 ;;;; Flymake
 
@@ -1692,6 +1688,120 @@ REPORT-FN is Flymake's callback function."
     ;; Rule-head.
     (t most-positive-fixnum)))
 
+;;;; Paragraphs
+
+(defun dialog--forward-same-comment-style (forward-arg)
+  "Move forwards through comments with the same comment style.
+
+FORWARD-ARG is the argument for `forward-line'.  Don't move from the
+current line if there is no comment on it or if there is other syntax in
+front of the comment syntax."
+  (end-of-line)
+  (when-let* ((start (dialog--start-of-comment-or-string)))
+    (goto-char start)
+    (when (= (current-column) (current-indentation))
+      (let ((target-regexp (rx (literal (buffer-substring-no-properties
+                                         (point)
+                                         (progn
+                                           (forward-same-syntax)
+                                           (point))))
+                               (not ?%)))
+            (target-indentation (current-indentation)))
+        (while (and (save-excursion
+                      (and (zerop (forward-line forward-arg))
+                           (= (current-indentation) target-indentation)
+                           (progn
+                             (back-to-indentation)
+                             (looking-at-p target-regexp))))
+                    (forward-line forward-arg)))))))
+
+(defconst dialog-paragraph-delimiter-regexp
+  (rx (opt (syntax ?')) (or ?\( ?\[ ?\{))
+  "The default regular expression used to identify paragraph delimiters.")
+
+(defcustom dialog-paragraph-delimiter dialog-paragraph-delimiter-regexp
+  "Configure an additional method for delimiting paragraphs.
+
+This directly configures the behavior of `dialog-forward-paragraph'
+which will indirectly determine the behavior of commands like
+`fill-paragraph'.  Regular expression matches and function calls are
+made at the indentation column."
+  :type '(choice (const :tag "No additional delimiter" nil)
+                 (const :tag "One paragraph per non-comment line" t)
+                 (const :tag "Syntax start" dialog-paragraph-delimiter-regexp)
+                 (string :tag "Custom regular expression")
+                 (function :tag "Custom function")))
+
+(defun dialog--paragraph-delimiter-p ()
+  "Return whether the current line should delimit a paragraph."
+  (pcase dialog-paragraph-delimiter
+    ((and (pred functionp) fn)
+     (save-excursion
+       (back-to-indentation)
+       (funcall fn)))
+    ((and (pred stringp) regexp)
+     (save-excursion
+       (back-to-indentation)
+       (looking-at-p regexp)))
+    (delimit
+     delimit)))
+
+(defun dialog-forward-paragraph (&optional arg)
+  "Move forward to the end of the paragraph.
+
+With argument ARG, do it ARG times.  Move backwards when ARG is a
+negative value.  If a limit is reached, return the number of paragraphs
+left to move."
+  (interactive "p")
+  (unless arg (setq arg 1))
+  (let* ((forwards (cl-plusp arg))
+         (dec-fn (if forwards #'1- #'1+))
+         (forward-arg (if forwards 1 -1))
+         (line-edge-fn (if forwards #'end-of-line #'back-to-indentation))
+         (re-search-fn (if forwards #'re-search-forward #'re-search-backward)))
+    (cl-loop
+     named arg-loop
+     while (not (zerop arg))
+     do (cl-loop
+         with target-indentation
+         initially
+         ;; Try to move out of the current paragraph to find the next paragraph,
+         ;; and then try to move through comments with the same style.
+         (funcall re-search-fn (rx graphic) nil t)
+         (dialog--forward-same-comment-style forward-arg)
+         ;; Test the line for a trailing comment or a paragraph delimiter.
+         (when (or (dialog--line-has-comment-p)
+                   (dialog--paragraph-delimiter-p))
+           (setq arg (funcall dec-fn arg))
+           (cl-return))
+         ;; Set the indentation level to search for.
+         (setq target-indentation (current-indentation))
+         ;; Move 1 line.  Exit the outer loop at buffer limit.
+         unless (zerop (forward-line forward-arg))
+         do (cl-return-from arg-loop)
+         ;; Test the line for an indentation change, no indentation, emptiness,
+         ;; a trailing comment, or a paragraph delimiter.
+         when (or (/= (current-indentation) target-indentation)
+                  (zerop (current-indentation))
+                  (dialog--empty-line-p)
+                  (dialog--line-has-comment-p)
+                  (dialog--paragraph-delimiter-p))
+         do (progn
+              ;; Go back to the last line which is in the paragraph.
+              (forward-line (- forward-arg))
+              (setq arg (funcall dec-fn arg))
+              (cl-return)))
+     do (funcall line-edge-fn)))
+  arg)
+
+(defun dialog-backward-paragraph (arg)
+  "Move backwards to the end of the current paragraph ARG times.
+
+Behavior is as described for `dialog-forward-paragraph' when called with
+a negative argument."
+  (interactive "p")
+  (dialog-forward-paragraph (- arg)))
+
 ;;;; Keymap
 
 (defvar dialog-mode-map
@@ -1700,6 +1810,8 @@ REPORT-FN is Flymake's callback function."
     (define-key map (kbd "C-c C-c") #'dialog-debug-send-command)
     (define-key map (kbd "C-c C-e") #'dialog-debug-send-command-dwim)
     (define-key map (kbd "C-c C-i") #'dialog-toggle-indent)
+    (define-key map (kbd "C-c C-n") #'dialog-forward-paragraph)
+    (define-key map (kbd "C-c C-p") #'dialog-backward-paragraph)
     (define-key map (kbd "C-c C-u") #'dialog-up-block)
     (define-key map (kbd "C-c C-z") #'dialog-debug-run)
     map))
@@ -1787,13 +1899,13 @@ REPORT-FN is Flymake's callback function."
   (setq-local comment-start "%% ")
   (setq-local comment-start-skip (rx "%%" (0+ (syntax ?-))))
   (setq-local end-of-defun-function #'dialog-end-of-defun)
-  (setq-local fill-paragraph-function #'dialog-fill-paragraph)
+  (setq-local fill-forward-paragraph-function #'dialog-forward-paragraph)
   (setq-local font-lock-defaults '((dialog-font-lock-keywords
                                     dialog-font-lock-keywords-1
                                     dialog-font-lock-keywords-2
                                     dialog-font-lock-keywords-3)))
   (setq-local indent-line-function #'dialog-indent-line)
-  (setq-local normal-auto-fill-function #'dialog-do-autofill)
+  (setq-local normal-auto-fill-function #'dialog-do-auto-fill)
   (setq-local outline-level #'dialog-outline-level)
   (setq-local outline-regexp (dialog-rx outline))
   (add-hook 'electric-indent-functions #'dialog-electric-indent nil t)
