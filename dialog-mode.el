@@ -7,7 +7,7 @@
 ;; Maintainer: Morgan Willcock <morgan@ice9.digital>
 ;; Package-Requires: ((emacs "28.1"))
 ;; URL: https://git.sr.ht/~mew/dialog-mode
-;; Version: 1.0.0
+;; Version: 1.0.0-dev
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
