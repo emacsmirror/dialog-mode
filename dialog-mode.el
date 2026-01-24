@@ -1676,8 +1676,8 @@ REPORT-FN is Flymake's callback function."
     (?# (1- most-positive-fixnum))
     ;; Comment.
     (?% (save-excursion
-         (forward-same-syntax)
-         (- (current-column) 2)))
+          (forward-same-syntax)
+          (- (current-column) 2)))
     ;; Rule-head.
     (t most-positive-fixnum)))
 
