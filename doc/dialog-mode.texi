@@ -52,7 +52,7 @@ Version @value{VERSION}.
 * Motion commands::
 * Paragraphs::
 * Imenu support::
-* Outline Mode support::
+* Outline support::
 * Configuring game files::
 * Flymake support::
 * Interactive debugger::
@@ -362,7 +362,7 @@ tab-stop preference within the existing rule:
 @cindex rule @subentry selection
 @cindex motion
 @cindex navigation
-@cindex navigation @subentry function @seealso{Outline Mode support}
+@cindex navigation @subentry function @seealso{Outline support}
 @cindex selection
 
 Dialog Mode permits navigation around and selection of rule
@@ -410,7 +410,7 @@ value indicates that block motion commands are permitted to push the
 previous location to the mark-ring when the value of point changes.
 @end defopt
 
-See also: @ref{Imenu support} and @ref{Outline Mode support}.
+See also: @ref{Imenu support} and @ref{Outline support}.
 
 
 @node Paragraphs
@@ -508,9 +508,9 @@ should probably be set to @code{t} unless there is a noticeable
 performance issue or no buffer changes are being made.
 
 
-@node Outline Mode support
-@chapter Outline Mode support
-@cindex Outline Mode
+@node Outline support
+@chapter Outline support
+@cindex Outline
 @cindex outline
 
 Outline Mode is major mode intended to edit outline-format documents
@@ -518,9 +518,9 @@ with selective display.  The same functionality is also available
 through alternate key-bindings using the minor mode version, enabled
 by invoking @code{outline-minor-mode}.
 
-Dialog Mode defines Outline Mode settings by borrowing some
-conventions for headings and their associated @emph{depth} from the
-built-in Lisp mode.  Three types of headings are defined:
+Dialog Mode defines Outline settings by borrowing some conventions for
+headings and their associated @emph{depth} from the built-in Lisp
+mode.  Three types of headings are defined:
 
 @itemize @bullet
 @item
@@ -534,8 +534,8 @@ Rule-heads.
 
 The @emph{depth} of comment-based headings is determined by
 subtracting 2 from the number of @samp{%} characters which were used.
-For example, the following comments define Outline Mode headings for
-the first three levels:
+For example, the following comments define Outline headings for the
+first three levels:
 
 @example dialog
 %%% Level 1 heading
