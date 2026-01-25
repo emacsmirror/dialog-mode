@@ -44,6 +44,7 @@
 
 ;;;; Faces
 
+;;;###autoload
 (defgroup dialog-faces nil
   "Faces used by Dialog Mode."
   :group 'dialog
@@ -148,6 +149,7 @@
 
 ;;;; Customization
 
+;;;###autoload
 (defgroup dialog nil
   "Major mode for editing Dialog files."
   :tag "Dialog"
