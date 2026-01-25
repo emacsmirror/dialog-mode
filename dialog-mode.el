@@ -1632,6 +1632,10 @@ a negative argument."
      :help "Jump to a place of significance in the buffer"]
     ["Jump to block opening" dialog-up-block
      :help "Jump to the opening of the current block"]
+    ["Forward paragraph" dialog-forward-paragraph
+     :help "Move forwards by one Dialog paragraph"]
+    ["Backward paragraph" dialog-backward-paragraph
+     :help "Move backwards by one Dialog paragraph"]
     "---"
     ["Enable the use of a pseudo-terminal" dialog-debug-toggle-use-pty
      :style toggle
