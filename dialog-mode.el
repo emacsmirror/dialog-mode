@@ -657,12 +657,11 @@ changes."
 (defun dialog-up-block ()
   "Move point to the opening of the current block."
   (interactive)
-  (let ((from (point)))
-    (goto-char (dialog-block-position (dialog--parse-block)))
+  (when-let* ((block (dialog--parse-block)))
     (unless (or (null dialog-block-motion-push-mark)
-                (region-active-p)
-                (eq from (point)))
-      (push-mark from))))
+                (region-active-p))
+      (push-mark (point)))
+    (goto-char (dialog-block-position block))))
 
 (defun dialog-beginning-of-defun (&optional arg)
   "Move backwards to the beginning of a rule-head.
