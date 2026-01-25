@@ -81,6 +81,10 @@ Indentation
 
 * Code alignment::
 
+Paragraphs
+
+* Auto Fill support::
+
 Interactive debugger
 
 * Sending commands::
@@ -450,6 +454,25 @@ match on every non-comment line, effectively limiting the definition
 of a paragraph to a single line.  A value of @code{nil} means that no
 additional delimiter is used.
 @end defopt
+
+@menu
+* Auto Fill support::
+@end menu
+
+
+@node Auto Fill support
+@section Auto Fill
+@cindex Auto Fill
+
+Dialog Mode supports the use of @code{auto-fill-mode} to automatically
+wrap lines as they are typed.
+
+When typing inside a rule-body, the fill is restricted to the current
+paragraph as defined by the rules described in @ref{Paragraphs}.
+
+When typing on a line which has no indentation and contains
+non-comment syntax, the Auto Fill functionality is suppressed to
+ensure that the line remains syntactically valid.
 
 
 @node Imenu support

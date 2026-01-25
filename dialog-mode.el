@@ -1296,9 +1296,17 @@ do not re-indent the line."
 
 (defun dialog-do-auto-fill ()
   "Dialog specific auto-fill function."
-  ;; Stop `default-indent-new-line' starting a line in column zero.
-  (let ((indent-line-function #'indent-relative))
-    (do-auto-fill)))
+  (when (or
+         ;; Any line which has some indentation.
+         (cl-plusp (current-indentation))
+         ;; Comments which start in column 0.
+         (and-let* ((start (dialog--start-of-comment-or-string)))
+           (save-excursion
+             (goto-char start)
+             (zerop (current-column)))))
+    ;; Stop `default-indent-new-line' starting a line in column zero.
+    (let ((indent-line-function #'indent-relative))
+      (do-auto-fill))))
 
 ;;;; Flymake
 
