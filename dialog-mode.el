@@ -884,13 +884,13 @@ the match or nil if there was no match."
   (let* ((forwards (cl-plusp bound))
          (bound-check-func (if forwards #'>= #'<=))
          (search-func (if forwards #'re-search-forward #'re-search-backward))
-         found new-pos)
+         new-pos)
     (when (funcall bound-check-func bound (point))
       (save-excursion
-        (while (and (funcall search-func (dialog-rx rule-head-start) bound t)
-                    (or (dialog--in-comment-p)
-                        (not (setq found t)))))
-        (when found
+        (when (cl-loop
+               while (funcall search-func (dialog-rx rule-head-start) bound t)
+               unless (dialog--in-comment-p)
+               return t)
           ;; Move to the opening "(".
           (beginning-of-line)
           (dialog--forward-prefix-chars)
