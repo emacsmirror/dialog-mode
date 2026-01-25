@@ -898,13 +898,13 @@ the match or nil if there was no match."
           (condition-case nil
               (progn
                 (forward-sexp)
-                (and (re-search-forward
-                      (rx (group (0+ whitespace))) (line-end-position) t)
-                     (setq new-pos (if forwards
-                                       ;; Already at the end of the match.
-                                       (point)
-                                     ;; Move as if searching backwards.
-                                     (line-beginning-position)))))
+                (when (re-search-forward
+                       (rx (group (0+ whitespace))) (line-end-position) t)
+                  (setq new-pos (if forwards
+                                    ;; Already at the end of the match.
+                                    (point)
+                                  ;; Move as if searching backwards.
+                                  (line-beginning-position)))))
             (scan-error)))))
     (and new-pos (goto-char new-pos))))
 
