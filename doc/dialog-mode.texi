@@ -461,7 +461,7 @@ additional delimiter is used.
 
 
 @node Auto Fill support
-@section Auto Fill
+@section Auto Fill support
 @cindex Auto Fill
 
 Dialog Mode supports the use of @code{auto-fill-mode} to automatically
