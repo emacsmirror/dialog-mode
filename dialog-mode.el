@@ -1484,7 +1484,7 @@ REPORT-FN is Flymake's callback function."
             (dialog-end-of-defun)))
         (nreverse index)))))
 
-;;;; Outline mode
+;;;; Outline
 
 (defun dialog-outline-level ()
   "Return the depth for the current outline heading."
