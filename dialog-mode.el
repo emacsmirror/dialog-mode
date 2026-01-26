@@ -889,10 +889,7 @@ the match or nil if there was no match."
          new-pos)
     (when (funcall bound-check-func bound (point))
       (save-excursion
-        (when (cl-loop
-               while (funcall search-func (dialog-rx rule-head-start) bound t)
-               unless (dialog--in-comment-p)
-               return t)
+        (when (funcall search-func (dialog-rx rule-head-start) bound t)
           ;; Move to the opening "(".
           (beginning-of-line)
           (dialog--forward-prefix-chars)
