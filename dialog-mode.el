@@ -1477,7 +1477,7 @@ REPORT-FN is Flymake's callback function."
             (when-let* ((start (dialog--start-of-comment-or-string)))
               (goto-char start))
             ;; Move backwards through whitespace.
-            (forward-comment (- (point-max)))
+            (forward-comment (- (point)))
             ;; Create the index entry.
             (let ((rule-head (buffer-substring-no-properties
                               (match-beginning 0) (point))))
