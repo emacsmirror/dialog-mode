@@ -354,7 +354,9 @@ Prefer existing parser state PPSS over calling `syntax-ppss'."
 
 (defun dialog--line-has-comment-p ()
   "Return a non-nil value when the current line has a comment on it."
-  (save-excursion (end-of-line) (dialog--in-comment-p)))
+  (save-excursion
+    (end-of-line)
+    (dialog--in-comment-p)))
 
 (defun dialog--list-end (start)
   "Return the end position of the list which opens at position START."
