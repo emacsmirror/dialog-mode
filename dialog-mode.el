@@ -1193,6 +1193,20 @@ When a region is active, send the region, otherwise send the current line."
              dialog-debug-send-command-input (process-name process))
     (comint-simple-send process dialog-debug-send-command-input)))
 
+(defun dialog-debug-set-default-command ()
+  "Set the default command to be sent to the debug process."
+  (interactive)
+  (setq dialog-debug-send-command-default
+        (dialog--completing-read
+         "Default command: "
+         (lambda (string pred action)
+           (if (eq action 'metadata)
+               (list 'metadata
+                     (cons 'annotation-function #'dialog--annotate-command)
+                     (cons 'group-function #'dialog--group-command))
+             (complete-with-action
+              action dialog-debug-send-command-presets string pred))))))
+
 (defvar dialog-debug-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c C-c") #'dialog-debug-send-command)
@@ -1666,15 +1680,17 @@ a negative argument."
      :active (dialog-debug-buffer)
      :help "Display and switch to the buffer for the Dialog debug program"]
     "---"
+    ["Set the default command to send" dialog-debug-set-default-command
+     :help "Set the default command to send to the debug program"]
+    ["Send default command" dialog-debug-send-command
+     :active (dialog-debug-process)
+     :help "Send the default command to the debug program"]
     ["Send current line as command" dialog-debug-send-command-from-line
      :active (dialog-debug-process)
      :help "Send the current line to the debug program"]
     ["Send region as commands" dialog-debug-send-command-from-region
      :active (and (dialog-debug-process) (use-region-p))
      :help "Send the lines in the current region to the debug program"]
-    ["Send default command" dialog-debug-send-command
-     :active (dialog-debug-process)
-     :help "Send the default command to the debug program"]
     ("Send command from presets"
      :active (dialog-debug-process)
      ,@(cl-loop for (command . description) in dialog-debug-send-command-presets

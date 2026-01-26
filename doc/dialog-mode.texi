@@ -737,13 +737,20 @@ When using the prompt to send a debug command, a list of preset
 commands is made available to the completion interface which will
 handle the prompt.  The value of
 @code{dialog-debug-send-command-default} determines whether the
-command entered at the prompt will become the new default command.
+command entered at the prompt will become the new default command.  To
+update the default command directly using a similar prompt, use
+@code{dialog-debug-set-default-command}.
 
 @defopt dialog-debug-send-command-prompt-sets-default
 Determines whether the command most recently specified at the prompt
 will become the new default command by updating the value of
 @code{dialog-debug-send-command-default}.
 @end defopt
+
+@defun dialog-debug-set-default-command
+Prompt for a command which will become the new default command by
+setting the value of @code{dialog-debug-send-command-default}.
+@end defun
 
 @kindex C-c C-e
 It is also possible to send debug commands represented by lines of
