@@ -1289,8 +1289,10 @@ function allows \"[more]\" prompts to be dismissed automatically, see
 With prefix argument SECONDARY use the secondary browser instead of the
 default browser."
   (interactive "P")
-  (if secondary
-      (funcall browse-url-secondary-browser-function dialog-manual-url)
+  (let ((browse-url-browser-function
+         (if secondary
+             browse-url-secondary-browser-function
+           browse-url-browser-function)))
     (browse-url dialog-manual-url)))
 
 ;;;; Electric-indent
