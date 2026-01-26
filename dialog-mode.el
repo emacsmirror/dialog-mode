@@ -853,13 +853,11 @@ indentation column."
   "Toggle indentation for the current line."
   (interactive)
   (save-excursion
-    (back-to-indentation)
-    (let ((end (point)))
-      (cond ((zerop (skip-chars-backward " \t"))
-             (tab-to-tab-stop)
-             (funcall indent-line-function))
-            (t
-             (delete-region (point) end)))))
+    (beginning-of-line)
+    (if (cl-plusp (skip-chars-forward " \t"))
+        (delete-region (line-beginning-position) (point))
+      (tab-to-tab-stop)
+      (funcall indent-line-function)))
   ;; Move to the current indentation column when inside indentation.
   (when (<= (current-column) (current-indentation))
     (back-to-indentation)))
