@@ -1391,58 +1391,54 @@ REPORT-FN is Flymake's callback function."
       (flymake-log :warning "No game files are configured"))
     (save-restriction
       (widen)
-      (setq dialog--flymake-proc
-            (make-process
-             :name "dialog-flymake"
-             :noquery t
-             :connection-type 'pipe
-             :buffer (generate-new-buffer " *dialog-flymake*")
-             :command (dialog--make-flymake-command)
-             :sentinel
-             (lambda (proc _event)
-               (when (memq (process-status proc) '(exit signal))
-                 (unwind-protect
-                     (if (with-current-buffer source-buffer
-                           (eq proc dialog--flymake-proc))
-                         (with-current-buffer (process-buffer proc)
-                           (goto-char (point-min))
-                           (let ((ht (make-hash-table :test #'equal))
-                                 (source-file (buffer-file-name source-buffer))
-                                 source-diags)
-                             ;; Push all diagnostics into a hash table to group
-                             ;; them by filename.
-                             (cl-loop
-                              while (re-search-forward
-                                     dialog-error-regexp nil t)
-                              for type = (pcase (match-string 1)
-                                           ("Debug"   :dialog-debug)
-                                           ("Error"   :error)
-                                           ("Info"    :dialog-info)
-                                           ("Warning" :warning)
-                                           (_         :note))
-                              for filename = (match-string 2)
-                              for beg = (cons
-                                         (string-to-number (match-string 3)) 0)
-                              for msg = (match-string 4)
-                              for diag = (flymake-make-diagnostic
-                                          filename beg nil type msg
-                                          'dialogc)
-                              do (push diag (gethash filename ht)))
-                             ;; Add all but the diagnostics for the source
-                             ;; buffer as list-only diagnostics.
-                             (dialog--clear-flymake-diagnostics)
-                             (maphash
-                              (lambda (file diags)
-                                (if (and source-file
-                                         (file-equal-p file source-file))
-                                    (setq source-diags diags)
-                                  (push (cons (expand-file-name file) diags)
-                                        flymake-list-only-diagnostics)))
-                              ht)
-                             (funcall report-fn source-diags)))
-                       (flymake-log :warning "Canceling obsolete check %s"
-                                    proc))
-                   (kill-buffer (process-buffer proc))))))))))
+      (setq
+       dialog--flymake-proc
+       (make-process
+        :name "dialog-flymake"
+        :noquery t
+        :connection-type 'pipe
+        :buffer (generate-new-buffer " *dialog-flymake*")
+        :command (dialog--make-flymake-command)
+        :sentinel
+        (lambda (proc _event)
+          (when (memq (process-status proc) '(exit signal))
+            (unwind-protect
+                (if (with-current-buffer source-buffer
+                      (eq proc dialog--flymake-proc))
+                    (with-current-buffer (process-buffer proc)
+                      (goto-char (point-min))
+                      (let ((ht (make-hash-table :test #'equal))
+                            (source-file (buffer-file-name source-buffer))
+                            source-diags)
+                        ;; Push all diagnostics into a hash table to group them
+                        ;; by filename.
+                        (cl-loop
+                         while (re-search-forward dialog-error-regexp nil t)
+                         for type = (pcase (match-string 1)
+                                      ("Debug"   :dialog-debug)
+                                      ("Error"   :error)
+                                      ("Info"    :dialog-info)
+                                      ("Warning" :warning)
+                                      (_         :note))
+                         for filename = (match-string 2)
+                         for beg = (cons (string-to-number (match-string 3)) 0)
+                         for msg = (match-string 4)
+                         for diag = (flymake-make-diagnostic
+                                     filename beg nil type msg 'dialogc)
+                         do (push diag (gethash filename ht)))
+                        ;; Add all but the diagnostics for the source buffer as
+                        ;; list-only diagnostics.
+                        (dialog--clear-flymake-diagnostics)
+                        (maphash
+                         (lambda (file diags)
+                           (if (and source-file (file-equal-p file source-file))
+                               (setq source-diags diags)
+                             (push (cons (expand-file-name file) diags)
+                                   flymake-list-only-diagnostics)))
+                         ht)
+                        (funcall report-fn source-diags)))
+                  (flymake-log :warning "Canceling obsolete check %s" proc))
+              (kill-buffer (process-buffer proc))))))))))
 
 ;;;; Imenu
 
