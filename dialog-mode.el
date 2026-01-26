@@ -1412,7 +1412,7 @@ REPORT-FN is Flymake's callback function."
                              ;; Push all diagnostics into a hash table to group
                              ;; them by filename.
                              (cl-loop
-                              while (search-forward-regexp
+                              while (re-search-forward
                                      dialog-error-regexp nil t)
                               for type = (pcase (match-string 1)
                                            ("Debug"   :dialog-debug)
