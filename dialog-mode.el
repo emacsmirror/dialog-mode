@@ -1455,16 +1455,13 @@ REPORT-FN is Flymake's callback function."
       (goto-char (point-min))
       (let (index topic)
         (while (re-search-forward (dialog-rx (or rule-head-start topic)) nil t)
-          (cond
-           ((dialog--in-comment-p))
-           ((eq (char-after (match-beginning 0)) ?#)
-            ;; Store the current topic and add it to the index.
-            (push (cons (setq topic (match-string-no-properties 0))
-                        (if imenu-use-markers
-                            (copy-marker (point) t)
-                          (point)))
-                  index))
-           (t
+          (if (eq (char-after (match-beginning 0)) ?#)
+              ;; Store the current topic and add it to the index.
+              (push (cons (setq topic (match-string-no-properties 0))
+                          (if imenu-use-markers
+                              (copy-marker (point) t)
+                            (point)))
+                    index)
             (end-of-line)
             ;; Move out of a comment.
             (when-let* ((start (dialog--start-of-comment-or-string)))
@@ -1484,7 +1481,7 @@ REPORT-FN is Flymake's callback function."
                        (point)))
                index))
             ;; Don't re-match the previous match.
-            (dialog-end-of-defun))))
+            (dialog-end-of-defun)))
         (nreverse index)))))
 
 ;;;; Outline mode
