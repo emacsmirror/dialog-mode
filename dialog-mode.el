@@ -413,7 +413,7 @@ existing parser state PPSS over calling `syntax-ppss'."
                when (cl-plusp (dialog--paren-depth ppss))
                return t))))
 
-;;;; Special statement parser
+;;;; Block parser
 
 (cl-defstruct (dialog-block
                (:constructor dialog-make-block)
