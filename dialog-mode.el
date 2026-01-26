@@ -1207,13 +1207,6 @@ When a region is active, send the region, otherwise send the current line."
              (complete-with-action
               action dialog-debug-send-command-presets string pred))))))
 
-(defvar dialog-debug-mode-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "C-c C-c") #'dialog-debug-send-command)
-    (define-key map (kbd "C-c C-z") #'quit-window)
-    (set-keymap-parent map comint-mode-map)
-    map))
-
 (defcustom dialog-debug-use-output-responder t
   "Specifies whether the output filter should send responses.
 
@@ -1264,6 +1257,13 @@ function allows \"[more]\" prompts to be dismissed automatically, see
   (setq dialog-debug-use-pty (not dialog-debug-use-pty))
   (message "Use of a pseudo-terminal for the next debug buffer is now %s"
            (if dialog-debug-use-pty "enabled" "disabled")))
+
+(defvar dialog-debug-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "C-c C-c") #'dialog-debug-send-command)
+    (define-key map (kbd "C-c C-z") #'quit-window)
+    (set-keymap-parent map comint-mode-map)
+    map))
 
 (define-derived-mode dialog-debug-mode comint-mode "DGDebug"
   "Major mode for running the Dialog interactive debugger.
