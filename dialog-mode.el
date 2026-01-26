@@ -776,9 +776,10 @@ of indentation but a normally sized indent for subsequent levels."
               (cl-decf new-level)
             ;; Otherwise, remove one level of indentation when the current line
             ;; begins by closing one parenthesis level.
-            (when (memq (alist-get (char-after) '((?\) . ?\()
-                                                  (?\] . ?\[)
-                                                  (?\} . ?{)))
+            (when (memq (cl-case (char-after)
+                          (?\) ?\()
+                          (?\] ?\[)
+                          (?\} ?\{))
                         dialog-indent-in-statement)
               (cl-decf new-level)))
           (cond ((dialog--rule-head-p opening-block)
