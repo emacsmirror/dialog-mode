@@ -16,11 +16,11 @@ readme_deps = \
 	doc/installation.texi
 
 manual_deps = \
+	doc/dialog-mode.texi \
 	doc/doclicense.texi \
 	doc/example-configuration.texi \
 	doc/features.texi \
 	doc/installation.texi \
-	doc/dialog-mode.texi \
 	doc/version.texi
 
 all: README dialog-mode.elc dialog-mode.info
