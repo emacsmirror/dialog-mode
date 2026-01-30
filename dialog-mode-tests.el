@@ -108,7 +108,7 @@ Do not dedent a line which begins with tight bracing."
 	($Obj = #steak) (player eats meat)"))
 
 (ert-deftest dialog-indent-braced-disjunction ()
-  "Reduce indentation level for braced disjunction."
+  "Increase indentation level for braced disjunction."
   (dialog-mode-tests--test-indentation
    "%% Braced disjunction.
 (royalty $Person)
@@ -118,6 +118,34 @@ Do not dedent a line which begins with tight bracing."
 		(the father of $Person is $Parent)
 	}
 	(royalty $Parent)"))
+
+(ert-deftest dialog-indent-braced-disjunction-no-dedent ()
+  "Increase indentation level for braced disjunction.
+
+Do not dedent any lines inside bracing."
+  (let ((dialog-dedent-line (rx (syntax ?\)))))
+    (dialog-mode-tests--test-indentation
+     "%% Braced disjunction.
+(royalty $Person)
+	{
+		(the mother of $Person is $Parent)
+		(or)
+		(the father of $Person is $Parent)
+	}
+	(royalty $Parent)")))
+
+(ert-deftest dialog-indent-braced-disjunction-no-indent ()
+  "Do not increase indentation level for braced disjunction."
+  (let ((dialog-indent-inside-block (rx unmatchable)))
+    (dialog-mode-tests--test-indentation
+     "%% Braced disjunction.
+(royalty $Person)
+	{
+	(the mother of $Person is $Parent)
+	(or)
+	(the father of $Person is $Parent)
+	}
+	(royalty $Parent)")))
 
 (ert-deftest dialog-indent-braced-statement ()
   "Increase indentation level within braced statements."
@@ -129,6 +157,17 @@ Do not dedent a line which begins with tight bracing."
 		!
 	}"))
 
+(ert-deftest dialog-indent-braced-statement-no-indent ()
+  "Do not increase indentation level within braced statements."
+  (let ((dialog-indent-inside-block (rx (or ?\( ?\[))))
+    (dialog-mode-tests--test-indentation
+     "%% Braced statement.
+(program entry point)
+	(exhaust) {
+	*(query { Veni (or) Vidi (or) Vici })
+	!
+	}")))
+
 (ert-deftest dialog-indent-collect-into-statement ()
   "Increase indentation level within collect into statements."
   (dialog-mode-tests--test-indentation
@@ -139,6 +178,17 @@ Do not dedent a line which begins with tight bracing."
 	(into $FruitList)
 	Come and buy! $FruitList!"))
 
+(ert-deftest dialog-indent-collect-into-statement-no-indent ()
+  "Do not increase indentation level within collect into statements."
+  (let (dialog-indent-inside-special-syntax)
+    (dialog-mode-tests--test-indentation
+     "%% Collect into statement.
+(program entry point)
+	(collect $F)
+	*(fruit $F)
+	(into $FruitList)
+	Come and buy! $FruitList!")))
+
 (ert-deftest dialog-indent-accumulate-into-statement ()
   "Increase indentation level within accumulate into statements."
   (dialog-mode-tests--test-indentation
@@ -148,6 +198,17 @@ Do not dedent a line which begins with tight bracing."
 		*(fruit $)
 	(into $Num)
 	I know of $Num pieces of fruit."))
+
+(ert-deftest dialog-indent-accumulate-into-statement-no-indent ()
+  "Do not increase indentation level within accumulate into statements."
+  (let (dialog-indent-inside-special-syntax)
+    (dialog-mode-tests--test-indentation
+     "%% Accumulate into statement.
+(program entry point)
+	(accumulate 1)
+	*(fruit $)
+	(into $Num)
+	I know of $Num pieces of fruit.")))
 
 (ert-deftest dialog-indent-branch-statement ()
   "Increase indentation level for branch statements."
@@ -165,6 +226,23 @@ Do not dedent a line which begins with tight bracing."
 		inedible
 	}."))
 
+(ert-deftest dialog-indent-branch-statement-no-indent ()
+  "Do not increase indentation level for branch statements."
+  (let ((dialog-indent-inside-block (rx unmatchable)))
+    (dialog-mode-tests--test-indentation
+     "%% Conjunctions and disjunctions.
+(eat $Obj)
+	You take a large bite, and conclude that it is
+	{
+	{ (fruit $Obj) (or) (pastry $Obj) }
+	sweet
+	(or)
+	($Obj = #steak) (player eats meat)
+	savoury
+	(or)
+	inedible
+	}.")))
+
 (ert-deftest dialog-indent-if-statement ()
   "Increase indentation level within if statements."
   (dialog-mode-tests--test-indentation
@@ -178,6 +256,21 @@ Do not dedent a line which begins with tight bracing."
 	(else)
 		inedible
 	(endif)."))
+
+(ert-deftest dialog-indent-if-statement-no-indent ()
+  "Do not increase indentation level within if statements."
+  (let (dialog-indent-inside-special-syntax)
+    (dialog-mode-tests--test-indentation
+     "%% If statement.
+(eat $Obj)
+	You take a large bite, and conclude that it is
+	(if) (fruit $Obj) (or) (pastry $Obj) (then)
+	sweet
+	(elseif) ($Obj = #steak) (player eats meat) (then)
+	savoury
+	(else)
+	inedible
+	(endif).")))
 
 (ert-deftest dialog-indent-select-at-random-statement ()
   "Increase indentation level within select at random statements."
@@ -193,6 +286,21 @@ Do not dedent a line which begins with tight bracing."
 		looks at his watch
 	(at random)."))
 
+(ert-deftest dialog-indent-select-at-random-statement-no-indent ()
+  "Do not increase indentation level within select at random statements."
+  (let (dialog-indent-inside-special-syntax)
+    (dialog-mode-tests--test-indentation
+     "%% Select at random statement.
+(descr #bouncer)
+	The bouncer
+	(select)
+	eyes you suspiciously
+	(or)
+	hums a ditty
+	(or)
+	looks at his watch
+	(at random).")))
+
 (ert-deftest dialog-indent-select-stopping-statement ()
   "Increase indentation level within select stopping statements."
   (dialog-mode-tests--test-indentation
@@ -206,6 +314,21 @@ Do not dedent a line which begins with tight bracing."
 		This is printed ever after.
 	(stopping)
 	(line)"))
+
+(ert-deftest dialog-indent-select-stopping-statement-no-indent ()
+  "Do not increase indentation level within select stopping statements."
+  (let (dialog-indent-inside-special-syntax)
+    (dialog-mode-tests--test-indentation
+     "%% Select stopping statement.
+(report)
+	(select)
+	This is printed the first time.
+	(or)
+	This is printed the second time.
+	(or)
+	This is printed ever after.
+	(stopping)
+	(line)")))
 
 (ert-deftest dialog-indent-access-predicate ()
   "Increase indentation level within access predicate."
@@ -226,6 +349,16 @@ Do not dedent a line which begins with tight bracing."
 		5
 		6))"))
 
+(ert-deftest dialog-indent-with-parens-inline-no-indent ()
+  "Do not increase indentation level with parens sharing a line."
+  (let ((dialog-indent-inside-block (rx unmatchable)))
+    (dialog-mode-tests--test-indentation
+     "(1
+2
+3 (4
+5
+6))")))
+
 (ert-deftest dialog-indent-with-parens-outline ()
   "Increase indentation level with parens on their own line."
   (dialog-mode-tests--test-indentation
@@ -240,6 +373,21 @@ Do not dedent a line which begins with tight bracing."
 	)
 )"))
 
+(ert-deftest dialog-indent-with-parens-outline-no-indent ()
+  "Do not increase indentation level with parens on their own line."
+  (let ((dialog-indent-inside-block (rx unmatchable)))
+    (dialog-mode-tests--test-indentation
+     "(
+1
+2
+3
+(
+4
+5
+6
+)
+)")))
+
 (ert-deftest dialog-indent-with-inline-parens ()
   "Indentation level is not affected by inline parens."
   (dialog-mode-tests--test-indentation
@@ -249,6 +397,17 @@ Do not dedent a line which begins with tight bracing."
 	((4
 		5
 		6))))"))
+
+(ert-deftest dialog-indent-with-inline-parens-no-indent ()
+  "No indentation is not affected by inline parens."
+  (let ((dialog-indent-inside-block (rx unmatchable)))
+    (dialog-mode-tests--test-indentation
+     "((1
+2
+3
+((4
+5
+6))))")))
 
 ;;;; Beginning of defun
 

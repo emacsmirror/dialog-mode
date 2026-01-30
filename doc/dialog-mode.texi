@@ -214,42 +214,42 @@ context.
 @cindex indentation
 
 Dialog Mode calculates the indentation level for a given line based on
-the existing indentation level, the usage of braces, brackets, and
+existing indentation levels, the usage of braces, brackets, and
 parentheses, and the use of special Dialog syntax which creates a
 logical block.  The indentation behavior can be generally defined as:
 
 @itemize @bullet
 @item
-If the line begins with no existing indentation the indentation amount
-will not be changed.  Column 0 might be thought of as ``sticky''.
+If the current line has no indentation the indentation level will not
+be changed.  Column 0 might be thought of as ``sticky''.
 @item
-The indentation level is incremented when a previous line has no
-indentation, i.e. if a previous line is a rule-head the subsequent
-lines are the rule body.
+The indentation level is incremented if at least one previous line has
+no indentation and the current line is indented by any amount.
 @item
 The indentation level is incremented inside braces, brackets, and
 parentheses.
 @item
 The indentation level is incremented for lines following special
-syntax which defines logical block.
+syntax which defines a logical block.
 @end itemize
 
-There are two excepts to the above, both implemented to match
-conventions used by the Dialog standard library:
+There are two excepts to the above which are configured by default,
+both implemented to match conventions used by the Dialog standard
+library and example code:
 
 @itemize @bullet
 @item
-The indentation level is decremented inside braces when the opening
-brace is immediately followed by a non-whitespace character.
+The indentation level inside braces is not incremented when the
+opening brace is not immediately followed by a white-space character.
 @item
 The indentation level is decremented for a line which only contains
 the syntax @samp{(or)} with an optional trailing comment.
 @end itemize
 
-The default configuration will uses 8 columns per level of
-indentation, although the first level is taken as a special case.  The
-indentation size can be configured by modifying the values of the
-customization variables @code{dialog-indent-offset} and
+The default configuration uses 8 columns per level of indentation,
+although the first level is taken as a special case.  The indentation
+size can be configured by modifying the values of the customization
+variables @code{dialog-indent-offset} and
 @code{dialog-indent-initial-size}.
 
 @defopt dialog-indent-offset
@@ -262,16 +262,36 @@ working on a game where the first level of indentation is twice the
 expected size, set this value to 2.
 @end defopt
 
-It is also possible to opt-out of indentation inside braces, brackets,
-and parentheses by modifying the value of the customization variable
-@code{dialog-indent-in-statement}.
+It is possible to enable or disable indentation inside braces,
+brackets, and parentheses, by modifying the value of the customization
+variable @code{dialog-indent-inside-block}, which is a regular
+expression to be matched at the opening position of the block.  A
+match means that the indentation level will be increased.
 
-@defopt dialog-indent-in-statement
-Specifies whether indentation is incremented inside braces, brackets,
-and parentheses.  The value is a list of characters.  If the character
-which opens the block (@samp{@{}, @samp{[}, or @samp{(}) is present in
-the list then the indentation level will be incremented within that
-block.
+@defopt dialog-indent-inside-block
+Specifies a regular expression which should be matched for indentation
+to be increased within braces, brackets, and parentheses.  The match
+is made with point before the character which opens the block.
+@end defopt
+
+Adding extra indentation for lines following special syntax such as
+@samp{(if)} can be disabled by modifying the value of the
+customization variable @code{dialog-indent-inside-special-syntax}.
+
+@defopt dialog-indent-inside-special-syntax
+Specifies whether lines following special block-defining syntax will
+have their indentation level increased.  A non-nil value means that
+additional indentation is applied.
+@end defopt
+
+To configure which lines inside a block will have indentation removed
+to match the indentation level of the block-opening, modify the
+customization variable @code{dialog-dedent-line}.
+
+@defopt dialog-dedent-line
+Specifies a regular expression which should match lines that will have
+one level of indentation removed.  The match is made with point at the
+indentation column for the line.
 @end defopt
 
 @cindex electric-indent-mode @subentry indentation

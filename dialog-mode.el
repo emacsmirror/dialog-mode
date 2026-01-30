@@ -701,38 +701,37 @@ nil."
 
 ;;;; Indentation
 
-(defun dialog--dedent-line-p (block line)
-  "Return whether LINE in BLOCK should have 1 level of indentation removed."
-  ;; TODO: What is matched here should be user configurable.
-  (or
-   ;; "Tight bracing" on the block opening, e.g. "{a".
-   (and (= (dialog-block-type block) ?\{)
-        (let ((inner-char (char-after (1+ (dialog-block-position block)))))
-          (or (null inner-char)
-              ;; Anything except endcomment (end of line) or whitespace syntax.
-              (not (memq (char-syntax inner-char) '(?> ? ))))))
-   ;; An "(or") on its own line.
-   (and (dialog--opens-block-p block)
-        ;; Match "(or)".
-        (and (dialog-statement-p line)
-             (equal (dialog-statement-syntax line) '("or")))
-        ;; Check there is nothing else preceding it on the same line.
-        (> (save-excursion
-             (goto-char (dialog-block-position line))
-             (line-beginning-position))
-           (save-excursion
-             (goto-char (dialog-block-position line))
-             (forward-comment (- (point)))
-             (point)))
-        ;; Check there is nothing else following it on the same line.
-        (< (save-excursion
-             (goto-char (dialog-block-position line))
-             (line-end-position))
-           (save-excursion
-             (goto-char (dialog-block-position line))
-             (forward-sexp)  ; Move forwards across the "(or)".
-             (forward-comment (point-max))
-             (point))))))
+(defcustom dialog-dedent-line
+  (rx (or (syntax ?\)) (seq "(or)" (0+ whitespace) (or "%%" line-end))))
+  "A regular expression which should match lines to dedent.
+
+The match is made with point at the indentation column for the line.  A
+successful match means that indentation for the line will be decreased
+to align with the block-opening."
+  :type 'string
+  :safe #'stringp)
+
+(defcustom dialog-indent-inside-block
+  (rx (or (or ?\( ?\[) (seq ?\{ (or whitespace line-end))))
+  "A regular expression which should match a block to indent.
+
+The match is made with point before the character which opens the block.
+A successful match means that indentation inside the block will be
+increased.
+
+This value had no effect for lines following block-defining syntax such
+as \"(if)\".  To configure indentation following special syntax, modify
+the value of `dialog-indent-inside-special-syntax'."
+  :type 'string
+  :safe #'stringp)
+
+(defcustom dialog-indent-inside-special-syntax t
+  "Specifies whether lines following special syntax are indented.
+
+A non-nil value means that the indentation level will be increased for
+lines following special block-defining syntax such as \"(if)\"."
+  :type 'boolean
+  :safe #'booleanp)
 
 (defcustom dialog-indent-offset 8
   "Specifies the indentation offset applied by `dialog-indent-line'.
@@ -742,14 +741,6 @@ columns per block level."
   :type 'integer
   :safe #'integerp)
 
-(defcustom dialog-indent-in-statement (list ?\( ?\[ ?{)
-  "Specifies which statement types have additional indentation applied.
-
-Statement types which match will have the indentation level of a
-multi-line body increased."
-  :type '(repeat character)
-  :safe (lambda (x) (not (memq nil (mapcar #'characterp x)))))
-
 (defcustom dialog-indent-initial-size 1
   "Specifies a multiplier used for the first level of indentation.
 
@@ -757,6 +748,27 @@ Increasing this to 2 will give a double sized indent for the first level
 of indentation but a normally sized indent for subsequent levels."
   :type 'integer
   :safe #'integerp)
+
+(cl-defgeneric dialog--indent-block-p (block in-list)
+  "Return whether BLOCK increases the indentation level.
+
+IN-LIST is ignored."
+  (ignore in-list)
+  (save-excursion
+    (goto-char (dialog-block-position block))
+    (looking-at-p dialog-indent-inside-block)))
+
+(cl-defmethod dialog--indent-block-p ((block dialog-statement) in-list)
+  "Return whether BLOCK increases the indentation level.
+
+IN-LIST should be non-nil when the original block search stared inside
+the punctuation will defines the block."
+  (cond (in-list
+         (save-excursion
+           (goto-char (dialog-block-position block))
+           (looking-at-p dialog-indent-inside-block)))
+        (dialog-indent-inside-special-syntax
+         (dialog-statement-symbol block))))
 
 (defun dialog--new-indent ()
   "Return the calculated indentation level for the current line."
@@ -769,38 +781,33 @@ of indentation but a normally sized indent for subsequent levels."
               (line-block (save-excursion
                             (dialog--forward-prefix-chars)
                             (dialog--parse-block-at-point)))
-              (list-opening (dialog--list-start))
+              (inside-list (eq (dialog--list-start)
+                               (dialog-block-position opening-block)))
               (new-level 0))
           ;; Decrement indentation to match particular indentation styles.
-          (if (dialog--dedent-line-p opening-block line-block)
-              (cl-decf new-level)
-            ;; Otherwise, remove one level of indentation when the current line
-            ;; begins by closing one parenthesis level.
-            (when (memq (cl-case (char-after)
-                          (?\) ?\()
-                          (?\] ?\[)
-                          (?\} ?\{))
-                        dialog-indent-in-statement)
-              (cl-decf new-level)))
+          (when (and (dialog--indent-block-p opening-block inside-list)
+                     (looking-at-p dialog-dedent-line))
+            (cl-decf new-level))
           (cond ((dialog--rule-head-p opening-block)
                  ;; Increase indentation when the block opening is a rule-head,
                  ;; unless the line being indented starts in column zero and is
                  ;; not empty.
                  (unless line-sticky
                    (cl-incf new-level dialog-indent-initial-size)))
-                ((eq list-opening (dialog-block-position opening-block))
+                (inside-list
                  ;; Increase indentation when inside a statement.
-                 (when (memq (dialog-block-type opening-block)
-                             dialog-indent-in-statement)
+                 (when (dialog--indent-block-p opening-block inside-list)
                    (cl-incf new-level)))
-                ((pcase (cons (dialog-statement-symbol opening-block)
+                (dialog-indent-inside-special-syntax
+                 ;; Add indentation based on matching block tokens.
+                 (pcase (cons (dialog-statement-symbol opening-block)
                               (and (dialog-statement-p line-block)
                                    (dialog-statement-symbol line-block)))
                    ;; Avoid further pattern matches if there is no block open.
                    (`(nil . ,_))
                    ;; Avoid further pattern matches for a block open without a
                    ;; block close.
-                   (`(,_ . nil) t)
+                   (`(,_ . nil) (cl-incf new-level))
                    ;; Matching token pairs.
                    ((or
                      ;; (if) ... (then) ... (elseif) ... (then) ... (else) ... (endif)
@@ -824,9 +831,7 @@ of indentation but a normally sized indent for subsequent levels."
                                                   'dialog-cycling-t
                                                   'dialog-at-random-t))))
                    ;; Default to increasing the indentation.
-                   (_ t))
-                 ;; Add indentation based on matching block tokens.
-                 (cl-incf new-level)))
+                   (_ (cl-incf new-level)))))
           ;; Move to the position where the current block was opened.
           (goto-char (dialog-block-position opening-block))
           (max (+ (current-indentation) (* new-level dialog-indent-offset))
