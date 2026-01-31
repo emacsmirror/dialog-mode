@@ -501,21 +501,22 @@ comment."
                                     (scan-sexps (point) 1)
                                   (scan-error))))
         (cl-decf statement-end)
-        (forward-char)
-        (while (progn
-                 (comment-forward (point-max))
-                 (< (point) statement-end))
-          (push (cl-case (char-after)
-                  (?#  (forward-sexp) 'object)
-                  (?$  (forward-sexp) 'variable)
-                  (?@  (forward-sexp) 'word)
-                  (?\( (forward-sexp) 'statement)
-                  (?\[ (forward-sexp) 'list)
-                  (t   (buffer-substring-no-properties
-                        (point)
-                        (progn (forward-sexp) (point)))))
-                statement))
-        (nreverse statement)))))
+        (save-excursion
+          (forward-char)
+          (while (progn
+                   (comment-forward (point-max))
+                   (< (point) statement-end))
+            (push (cl-case (char-after)
+                    (?#  (forward-sexp) 'object)
+                    (?$  (forward-sexp) 'variable)
+                    (?@  (forward-sexp) 'word)
+                    (?\( (forward-sexp) 'statement)
+                    (?\[ (forward-sexp) 'list)
+                    (t   (buffer-substring-no-properties
+                          (point)
+                          (progn (forward-sexp) (point)))))
+                  statement))
+          (nreverse statement))))))
 
 (defun dialog--statement-token (statement)
   "Return the symbol representing the statement list STATEMENT."
@@ -566,8 +567,7 @@ the statement is assumed to be unescaped."
            (?\{ (dialog-make-block
                  :position (point)
                  :type type))
-           (?\( (let ((syntax (save-excursion
-                                (dialog--parse-statement-syntax))))
+           (?\( (let ((syntax (dialog--parse-statement-syntax)))
                   (dialog-make-statement
                    :position (point)
                    :type type
