@@ -1031,9 +1031,6 @@ displayed if it exists."
     (when buffer
       (pop-to-buffer buffer))))
 
-;;;###autoload
-(defalias 'run-dialog #'dialog-debug-run)
-
 (defcustom dialog-debug-send-command-default "@replay"
   "Specifies the default command sent to the debug process.
 
