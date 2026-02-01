@@ -1273,6 +1273,7 @@ function allows \"[more]\" prompts to be dismissed automatically, see
 
 \\<dialog-debug-mode-map>"
   (setq-local comint-prompt-read-only t)
+  (setq-local comint-prompt-regexp (rx line-start "> "))
   (setq-local scroll-conservatively most-positive-fixnum)
   (when (setq-local process-connection-type dialog-debug-use-pty)
     (add-hook 'comint-output-filter-functions
