@@ -733,19 +733,19 @@ lines following special block-defining syntax such as \"(if)\"."
   :type 'boolean
   :safe #'booleanp)
 
-(defcustom dialog-indent-offset 8
-  "Specifies the indentation offset applied by `dialog-indent-line'.
-
-Lines determined to be within blocks are indented by this number of
-columns per block level."
-  :type 'integer
-  :safe #'integerp)
-
 (defcustom dialog-indent-initial-size 1
   "Specifies a multiplier used for the first level of indentation.
 
 Increasing this to 2 will give a double sized indent for the first level
 of indentation but a normally sized indent for subsequent levels."
+  :type 'integer
+  :safe #'integerp)
+
+(defcustom dialog-indent-offset 8
+  "Specifies the indentation offset applied by `dialog-indent-line'.
+
+Lines determined to be within blocks are indented by this number of
+columns per block level."
   :type 'integer
   :safe #'integerp)
 
