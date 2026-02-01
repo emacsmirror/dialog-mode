@@ -14,6 +14,9 @@ features:
               (setq-local page-delimiter
                           (concat "^" (make-string fill-column ?%)))))
 
+  ;; Enable automatic filling of paragraphs.
+  (add-hook 'dialog-mode-hook #'auto-fill-mode)
+
   ;; Add the Imenu menu to the menu-bar.
   (add-hook 'dialog-mode-hook #'imenu-add-menubar-index)
 
