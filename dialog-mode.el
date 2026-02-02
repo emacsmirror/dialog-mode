@@ -282,7 +282,10 @@ for dictionary words, objects, and variables.")
 (defun dialog--font-lock-prematch-block ()
   "Pre-match function for anchored font-lock match of block-defining syntax."
   (unless (dialog--in-comment-p)
-    (if-let* ((symbol (dialog-statement-symbol (dialog--parse-block))))
+    (if-let* ((symbol (dialog-statement-symbol
+                       (save-excursion
+                         (forward-char -1)
+                         (dialog--parse-block-at-point)))))
         ;; Return a search limit that is immediately after the leading words of
         ;; the syntax.  All words up until the search limit are going to get
         ;; highlighted.
