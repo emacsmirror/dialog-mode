@@ -158,6 +158,19 @@
 %%      ^^  ^^ nil
 %%        ^^   nil
 
+        (
+%%      ^ nil
+                then
+%%              ^^^^ nil
+                purely
+%%              ^^^^^^ nil
+                at
+%%              ^^ nil
+                random
+%%              ^^^^^^ nil
+        )
+%%      ^ nil
+
 %%% Paired punctuation
 
         { } [ ] ( )

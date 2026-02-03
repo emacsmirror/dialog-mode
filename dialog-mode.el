@@ -235,6 +235,25 @@
 
 ;;;; Font lock
 
+;; Prevent the use of lexical binding for font-lock boundaries.
+(defvar font-lock-beg)
+
+(defun dialog--font-lock-extend-region-syntax-form ()
+  "Move fontification boundaries to include a complete syntax form.
+
+Only consider syntax which opens with \"(\" because this is currently
+the only syntax which is highlighted and may span multiple lines.
+
+Only extend the region backwards.  The `font-lock-multiline' property is
+expected to be set across a syntactically valid form to handle changes
+in the forwards direction."
+  (save-excursion
+    (beginning-of-line)
+    (and-let* ((list-start (dialog--list-start)))
+      (and (= (char-after list-start) ?\()
+           (< list-start font-lock-beg)
+           (setq font-lock-beg list-start)))))
+
 (defconst dialog-font-lock-keywords-1
   `((,(dialog-rx topic) . dialog-topic-name-face))
   "Font lock keywords for level 1 highlighting in Dialog mode.
@@ -286,18 +305,23 @@ for dictionary words, objects, and variables.")
                        (save-excursion
                          (forward-char -1)
                          (dialog--parse-block-at-point)))))
-        ;; Return a search limit that is immediately after the leading words of
-        ;; the syntax.  All words up until the search limit are going to get
-        ;; highlighted.
-        (pcase symbol
-          ((or 'dialog-accumulate-t 'dialog-collect-t 'dialog-into-t)
-           (save-excursion (forward-word) (point)))
-          ('dialog-determine-t
-           (save-excursion (forward-word 2) (point)))
-          ('dialog-matching-t
-           (save-excursion (forward-word 3) (point)))
-          (_
-           (dialog--list-end (1- (point)))))
+        (let* ((parse-sexp-ignore-comments t)
+               (start-pos (1- (point)))
+               (end-pos (dialog--list-end start-pos)))
+          (put-text-property start-pos (1+ end-pos) 'font-lock-multiline t)
+          ;; Return a search limit that is immediately after the leading words
+          ;; of the syntax.  All words up until the search limit are going to
+          ;; get highlighted.  Move by sexp instead of by word for an easy way
+          ;; to skip over comments.
+          (pcase symbol
+            ((or 'dialog-accumulate-t 'dialog-collect-t 'dialog-into-t)
+             (save-excursion (forward-sexp) (point)))
+            ('dialog-determine-t
+             (save-excursion (forward-sexp 2) (point)))
+            ('dialog-matching-t
+             (save-excursion (forward-sexp 3) (point)))
+            (_
+             end-pos)))
       ;; Prevent searching beyond the current position.
       (forward-char -1)
       (1+ (point)))))
@@ -1734,7 +1758,9 @@ a negative argument."
   (add-hook 'electric-indent-functions #'dialog-electric-indent nil t)
   (add-hook 'flymake-diagnostic-functions #'dialog-flymake nil t)
   ;; Flymake is using source files rather than buffers.
-  (setq-local flymake-no-changes-timeout nil))
+  (setq-local flymake-no-changes-timeout nil)
+  (add-to-list 'font-lock-extend-region-functions
+               #'dialog--font-lock-extend-region-syntax-form))
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.dg\\'" . dialog-mode))

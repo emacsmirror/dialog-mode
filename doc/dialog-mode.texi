@@ -169,16 +169,6 @@ rule and defines a logical block.  This includes the following forms:
 (determine object $Obj) ... (from words) ... (matching all of $List)
 @end example
 
-@quotation Note
-The current font-lock implementation will attempt to validate each
-block-defining syntax form before the face is applied to ensure that
-the form is definitely the built-in special syntax rather than a
-user-defined rule which happens to begin with the same words.  The
-validation is tolerant of forms that span multiple lines but the
-(re)application of the face will currently only work if the entire
-form is on the same line.
-@end quotation
-
 Three levels of font-lock are available for selection based on the
 value of customization variable @code{font-lock-maximum-decoration}.
 To improve performance and reduce visual distraction, it may be

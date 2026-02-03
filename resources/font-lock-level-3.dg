@@ -158,6 +158,19 @@
 %%      ^^  ^^ dialog-escape-sequence-face
 %%        ^^   nil
 
+        (
+%%      ^ dialog-paren-face
+                then
+%%              ^^^^ dialog-special-block-face
+                purely
+%%              ^^^^^^ dialog-special-block-face
+                at
+%%              ^^ dialog-special-block-face
+                random
+%%              ^^^^^^ dialog-special-block-face
+        )
+%%      ^ dialog-paren-face
+
 %%% Paired punctuation
 
         { } [ ] ( )
