@@ -1296,6 +1296,7 @@ function allows \"[more]\" prompts to be dismissed automatically, see
   "Major mode for running the Dialog interactive debugger.
 
 \\<dialog-debug-mode-map>"
+  (setq comint-process-echoes t)
   (setq-local comint-prompt-read-only t)
   (setq-local comint-prompt-regexp (rx line-start "> "))
   (setq-local scroll-conservatively most-positive-fixnum)
