@@ -321,6 +321,24 @@ bind special completion commands to the space and \"?\" keys."
     (define-key minibuffer-local-completion-map "?" #'self-insert-command)
     (apply #'completing-read args)))
 
+(defun dialog--derived-buffer-name (buffer-name suffix &optional private)
+  "Return the name BUFFER-NAME extended with SUFFIX.
+
+SUFFIX will joined to BUFFER-NAME using a \"-\" character.  Naming
+conventions for special and private buffers are preserved.  When PRIVATE
+is non-nil the returned buffer name is guaranteed to begin with at least
+one space character."
+  (let ((new-name
+         (if (string-match (rx string-start
+                               (group (0+ whitespace) ?* (1+ not-newline)) ?*
+                               string-end)
+                           buffer-name)
+             (concat (match-string-no-properties 1 buffer-name) "-" suffix "*")
+           (concat buffer-name "-" suffix))))
+    (if (and private (not (string-prefix-p " " new-name)))
+        (concat " " new-name)
+      new-name)))
+
 (defun dialog--empty-line-p ()
   "Return a non-nil value when the current line is empty."
   (save-excursion
@@ -1276,6 +1294,8 @@ it would in traditional terminal."
 (defvar dialog-debug-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c C-c") #'dialog-debug-send-command)
+    (define-key map (kbd "C-c C-d d") #'dialog-data-display-dynamic)
+    (define-key map (kbd "C-c C-d t") #'dialog-data-display-tree)
     (define-key map (kbd "C-c C-z") #'quit-window)
     (set-keymap-parent map comint-mode-map)
     map))
@@ -1288,7 +1308,226 @@ it would in traditional terminal."
   (setq-local comint-prompt-read-only t)
   (setq-local comint-prompt-regexp (rx line-start "> "))
   (setq-local process-connection-type dialog-debug-use-pty)
-  (setq-local scroll-conservatively most-positive-fixnum))
+  (setq-local scroll-conservatively most-positive-fixnum)
+  (add-hook 'dialog-debug-mode-hook #'dialog-debug-auto-command-mode))
+
+;;;;; Comint auto-commands
+
+(defvar-local dialog-debug-auto-command-buffer nil
+  "The buffer used for capturing command output.")
+
+(defvar-local dialog-debug-auto-command-queue nil
+  "The current queue of commands to automatically send.")
+
+(defvar-local dialog-debug-auto-commands (list "@dynamic" "@tree")
+  "The list of commands to automatically send following normal output.")
+
+(defcustom dialog-debug-auto-command-hook
+  (list #'dialog-data-collect #'dialog-data-render)
+  "A hook which is called after each auto-command output."
+  :type 'hook)
+
+(defcustom dialog-debug-auto-command-setup-hook
+  (list #'dialog-data-capture-reset)
+  "A hook which is called before any auto-commands have been sent."
+  :type 'hook)
+
+(defun dialog-debug-auto-command-send (string)
+  "Check STRING for a prompt and respond by sending debug commands."
+  (let* ((auto-command (car dialog-debug-auto-command-queue))
+         (at-prompt (if auto-command
+                        ;; This is auto-command output.  Insert it into capture
+                        ;; buffer and then check for a prompt in that buffer.
+                        ;; Process ANSI control sequences for the most recent
+                        ;; line and the new chunk of output.
+                        (with-current-buffer dialog-debug-auto-command-buffer
+                          (let ((inhibit-read-only t)
+                                (line-pos (line-beginning-position)))
+                            (insert string)
+                            (ansi-color-filter-region line-pos (point)))
+                          ;; Don't override the start position for the next
+                          ;; usage of `ansi-color-filter-region' to ensure that
+                          ;; ANSI sequences split between chunks are processed.
+                          (setq ansi-color-context-region nil)
+                          ;; Check for a prompt in the capture buffer.
+                          (string-equal "> " (buffer-substring-no-properties
+                                              (line-beginning-position)
+                                              (point))))
+                      ;; This is regular output.  Check for the prompt in the
+                      ;; last line of the Comint buffer with the new string
+                      ;; appended to it once ANSI control sequences are
+                      ;; processed.
+                      (string-suffix-p
+                       "\n> "
+                       (ansi-color-apply
+                        (concat (buffer-substring-no-properties
+                                 (line-beginning-position) (point))
+                                string)))))
+         (process (get-buffer-process (current-buffer))))
+    (when at-prompt
+      ;; Run hooks when seeing a prompt after an auto-command.
+      (when auto-command
+        (run-hooks 'dialog-debug-auto-command-hook))
+      ;; Setup auto-commands if at the prompt and popping the current
+      ;; auto-command from the queue gives no command.
+      (unless (pop dialog-debug-auto-command-queue)
+        ;; Setup the auto-command queue.
+        (setq dialog-debug-auto-command-queue
+              (copy-sequence dialog-debug-auto-commands))
+        ;; Make the pseudo-terminal taller and override the adjustment function
+        ;; so that any window sizes changes don't reset the size to match the
+        ;; window.
+        (when process-connection-type
+          (advice-add 'window--adjust-process-windows :override #'ignore)
+          (set-process-window-size process 65535 79))
+        (run-hooks 'dialog-debug-auto-command-setup-hook))
+      ;; Check whether there is a next command to send.
+      (if-let* ((next-command (car dialog-debug-auto-command-queue)))
+          (progn
+            ;; Create/Clear the output buffer and send the next auto-command.
+            (with-current-buffer (setq
+                                  dialog-debug-auto-command-buffer
+                                  (get-buffer-create
+                                   (dialog--derived-buffer-name
+                                    (buffer-name) "auto-command" 'private)))
+              (let ((inhibit-read-only t))
+                (erase-buffer)))
+            ;; Send the next command.
+            (comint-simple-send process next-command))
+        ;; All auto-commands have been sent, and so restore the pseudo-terminal
+        ;; size.  An immediate resize can potentially jam the Comint buffer if
+        ;; someone is pressing keys as fast as they can and the system is slow,
+        ;; so use an idle timer.
+        (when process-connection-type
+          (advice-remove 'window--adjust-process-windows #'ignore)
+          (run-with-idle-timer 0.25 nil #'window--adjust-process-windows))))
+    ;; Don't insert auto-command output into the Comint buffer.
+    (if auto-command "" string)))
+
+(define-minor-mode dialog-debug-auto-command-mode
+  "Enable automatic commands from Comint output filters."
+  :lighter " AutoCommand"
+  :interactive (dialog-debug-mode)
+  (if dialog-debug-auto-command-mode
+      (add-hook 'comint-preoutput-filter-functions
+                #'dialog-debug-auto-command-send 90 t)
+    (remove-hook 'comint-preoutput-filter-functions
+                 #'dialog-debug-auto-command-send t)))
+
+(defun dialog-debug-toggle-auto-command-mode ()
+  "Toggle `dialog-debug-auto-command-mode' in the current debug buffer."
+  (interactive)
+  (if-let* ((buffer (dialog-debug-buffer)))
+      (with-current-buffer buffer
+        (if dialog-debug-auto-command-mode
+            (dialog-debug-auto-command-mode -1)
+          (dialog-debug-auto-command-mode))
+        (message "Dialog-Debug-Auto-Command-Mode mode %s in buffer '%s'"
+                 (if dialog-debug-auto-command-mode "enabled" "disabled")
+                 buffer))
+    (user-error "No debug buffer exists")))
+
+;;;;; Comint data collection and display.
+
+(defvar-local dialog-data-command-output nil
+  "Alist of commands and command output.")
+
+(defun dialog-data-capture-reset ()
+  "Remove previous captured output."
+  (setq dialog-data-command-output nil))
+
+(defun dialog-data-collect ()
+  "Collect output from the auto-command buffer and store it for later use."
+  (when-let* ((command-output
+               (with-current-buffer dialog-debug-auto-command-buffer
+                 (goto-char (point-min))
+                 (and (re-search-forward (rx line-start
+                                             (group (1+ (not control)))
+                                             (opt ?\C-m)
+                                             ?\C-j)
+                                         nil t)
+                      (let ((command (match-string-no-properties 1))
+                            (output (buffer-substring-no-properties
+                                     (point) (- (point-max) 2))))
+                        (cons command output))))))
+    ;; Store in the debug buffer.
+    (push command-output dialog-data-command-output)))
+
+(defun dialog-data-render ()
+  "Render the most recent captured output into a presentation buffer."
+  (pcase (car dialog-data-command-output)
+    (`(,command . ,output)
+     (let* ((buffer-name (dialog--derived-buffer-name (buffer-name) command))
+            (old-buffer (get-buffer buffer-name))
+            (buffer (or old-buffer
+                        (with-current-buffer (generate-new-buffer buffer-name)
+                          (dialog-data-mode)
+                          (current-buffer)))))
+       (with-temp-buffer
+         ;; Insert with trailing white-space removed.
+         (insert (replace-regexp-in-string (rx (1+ blank) line-end) "" output))
+         ;; Remove leading indentation.
+         (when-let* ((initial-indent (cl-loop initially (goto-char (point-min))
+                                              for indent = (current-indentation)
+                                              when (cl-plusp indent)
+                                              minimize indent
+                                              while (zerop (forward-line)))))
+           (indent-rigidly (point-min) (point-max) (- initial-indent)))
+         ;; Non-destructive replacement of previous buffer contents.
+         (let ((temp-buffer (current-buffer)))
+           (with-current-buffer buffer
+             (save-restriction
+               (widen)
+               (let ((inhibit-read-only t))
+                 (replace-buffer-contents temp-buffer)))
+             ;; When this is a brand new buffer, leave point at the start of it.
+             (unless old-buffer
+               (goto-char (point-min))))))))))
+
+(defun dialog-data-buffer (command)
+  "Return the buffer containing the output of the COMMAND."
+  (and-let* ((debug-buffer (if (derived-mode-p 'dialog-debug-mode)
+                               (buffer-name)
+                             (dialog-debug-buffer))))
+    (get-buffer (dialog--derived-buffer-name
+                 (buffer-name debug-buffer) command))))
+
+(defun dialog-data-display-dynamic ()
+  "Display the buffer containing \"@dynamic\" command output."
+  (interactive)
+  (if-let* ((buffer (dialog-data-buffer "@dynamic")))
+      (display-buffer buffer)
+    (user-error "No data buffer for @dynamic output exists")))
+
+(defun dialog-data-display-tree ()
+  "Display the buffer containing \"@tree\" command output."
+  (interactive)
+  (if-let* ((buffer (dialog-data-buffer "@tree")))
+      (display-buffer buffer)
+    (user-error "No data buffer for @tree output exists")))
+
+(defvar dialog-data-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "n") #'next-line)
+    (define-key map (kbd "p") #'previous-line)
+    map))
+
+(define-derived-mode dialog-data-mode special-mode "DGData"
+  "Major mode for interacting with Dialog state data."
+  ;; Font-lock needs to be active so that `outline-minor-mode-highlight' is
+  ;; reapplied reliably, as well as to identify the heading if
+  ;; `outline-minor-mode' gets disabled.
+  (setq-local font-lock-defaults
+              `(((,(rx line-start (char (?A . ?Z)) (1+ not-newline))
+                  . 'underline))
+                'keywords-only))
+  (setq-local outline-level (lambda () 1))
+  (setq-local outline-minor-mode-cycle t)
+  (setq-local outline-minor-mode-cycle-filter nil)
+  (setq-local outline-minor-mode-highlight 'override)
+  (setq-local outline-minor-mode-use-buttons t)
+  (setq-local outline-regexp (rx line-start (char (?A . ?Z))))
+  (add-hook 'dialog-data-mode-hook #'outline-minor-mode))
 
 ;;;; Documentation look-up
 
@@ -1773,6 +2012,8 @@ string elements in both lists have the same positions and are `equal'."
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c C-b") #'dialog-debug-display-buffer)
     (define-key map (kbd "C-c C-c") #'dialog-debug-send-command)
+    (define-key map (kbd "C-c C-d d") #'dialog-data-display-dynamic)
+    (define-key map (kbd "C-c C-d t") #'dialog-data-display-tree)
     (define-key map (kbd "C-c C-e") #'dialog-debug-send-command-dwim)
     (define-key map (kbd "C-c C-i") #'dialog-toggle-indent)
     (define-key map (kbd "C-c C-n") #'dialog-forward-paragraph)
@@ -1809,6 +2050,12 @@ string elements in both lists have the same positions and are `equal'."
      :style toggle
      :selected dialog-debug-use-pty
      :help "Enable running the Dialog debug program using a pseudo-terminal"]
+    ["Enable automatic debug command sending" dialog-debug-toggle-auto-command-mode
+     :active (dialog-debug-buffer)
+     :style toggle
+     :selected (with-current-buffer (dialog-debug-buffer)
+                 dialog-debug-auto-command-mode)
+     :help "Enable automatically sending debug commands at the debug prompt"]
     ["Enable automatic debug output responses" dialog-debug-toggle-auto-response-mode
      :active (dialog-debug-buffer)
      :style toggle
@@ -1827,6 +2074,12 @@ string elements in both lists have the same positions and are `equal'."
        (pop-to-buffer (dialog-debug-buffer)))
      :active (dialog-debug-buffer)
      :help "Display and switch to the buffer for the Dialog debug program"]
+    ["Display the current dynamic data state" dialog-data-display-dynamic
+     :active (dialog-data-buffer "@dynamic")
+     :help "Display the buffer for the current dynamic data state"]
+    ["Display the current object tree" dialog-data-display-tree
+     :active (dialog-data-buffer "@tree")
+     :help "Display the buffer for the current object tree state"]
     "---"
     ["Set the default command to send" dialog-debug-set-default-command
      :help "Set the default command to send to the debug program"]

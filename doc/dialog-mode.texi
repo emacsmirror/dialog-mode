@@ -93,6 +93,7 @@ Interactive debugger
 * Disabling the command interpreter::
 * Using a pseudo-terminal::
 * Dismissing game prompts::
+* Viewing game state information::
 
 @end detailmenu
 @end menu
@@ -763,6 +764,7 @@ buffer and process is determined.
 * Disabling the command interpreter::
 * Using a pseudo-terminal::
 * Dismissing game prompts::
+* Viewing game state information::
 @end menu
 
 
@@ -1027,6 +1029,72 @@ which always succeeds:
 @example dialog
 (yesno)  %% Automatically accept yes/no prompts.
 @end example
+
+
+@node Viewing game state information
+@section Viewing game state information
+@cindex game state information
+@cindex viewing game state information @subentry when debugging
+
+When a game is running in the debug buffer, it is possible to
+automatically send additional commands every time that a new prompt
+for game input appears.  The minor-mode
+@code{dialog-debug-auto-command-mode} is enabled by default in debug
+buffers and is pre-configured to send the commands @samp{@@dynamic}
+and @samp{@@tree}.  The command and command output will not be
+displayed in the debug buffer, instead being inserted into the buffer
+which is stored in the buffer-local variable
+@code{dialog-debug-auto-command-buffer}.  The customization variables
+@code{dialog-debug-auto-command-hook} and
+@code{dialog-debug-auto-command-setup-hook} can be used to act on
+command output and are pre-configured to generate additional buffers
+which represents game state information.
+
+@defvar dialog-debug-auto-command-buffer
+The buffer stored in this variable contains the command and output
+from a command which was automatically sent.
+@end defvar
+
+@defopt dialog-debug-auto-command-hook
+Functions added to this hook are called when the game prompt reappears
+after automatically sending a command.
+@end defopt
+
+@defopt dialog-debug-auto-command-setup-hook
+Functions added to this hook are called when the game prompt appears
+before any commands are automatically sent.
+@end defopt
+
+@kindex C-c C-d d
+@kindex C-c C-d t
+If using the pre-configured hook values, two buffers containing game
+state information will be created or updated every time that the
+prompt for input reappears.  Both of these buffers use the major mode
+@code{dialog-data-mode} and are named with a buffer name that is
+derived from the current debug buffer name.  The commands
+@code{dialog-data-display-dynamic} and @code{dialog-data-display-tree}
+will display these buffers and have the key-bindings @kbd{C-c C-d d}
+and @kbd{C-c C-d t} respectively in @code{dialog-mode} and
+@code{dialog-debug-mode} buffers.
+
+@defun dialog-data-display-dynamic
+Display the buffer which contains data derived from the
+@samp{@@dynamic} command for the current debug buffer.
+@end defun
+
+@defun dialog-data-display-tree
+Display the buffer which contains data derived from the @samp{@@tree}
+command for the current debug buffer.
+@end defun
+
+The command @code{dialog-debug-toggle-auto-command-mode} can be used
+to enable or disable @code{dialog-debug-auto-command-mode} in the
+current debug buffer.
+
+@defun dialog-debug-toggle-auto-command-mode
+Toggle the @code{dialog-debug-auto-command-mode} minor-mode in the
+current debug buffer.
+@end defun
 
 
 @node Browsing the Dialog manual
