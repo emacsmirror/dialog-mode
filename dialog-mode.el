@@ -521,14 +521,11 @@ the statement."
 
 Assume that point is on unescaped opening parenthesis and outside of a
 comment."
-  (let ((parse-sexp-ignore-comments t))
-    (and-let* ((statement-end (condition-case nil
-                                  (scan-sexps (point) 1)
-                                (scan-error))))
-      (cl-decf statement-end)
-      (save-excursion
-        (forward-char)
-        (with-syntax-table dialog-mode-parse-syntax-table
+  (and-let* ((statement-end (dialog--list-end (point))))
+    (save-excursion
+      (forward-char)
+      (with-syntax-table dialog-mode-parse-syntax-table
+        (let ((parse-sexp-ignore-comments t))
           (cl-loop
            while (progn
                    (comment-forward (point-max))
