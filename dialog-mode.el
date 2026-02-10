@@ -521,29 +521,27 @@ the statement."
 
 Assume that point is on unescaped opening parenthesis and outside of a
 comment."
-  (let ((parse-sexp-ignore-comments t)
-        statement)
-    (with-syntax-table dialog-mode-parse-syntax-table
-      (and-let* ((statement-end (condition-case nil
-                                    (scan-sexps (point) 1)
-                                  (scan-error))))
-        (cl-decf statement-end)
-        (save-excursion
-          (forward-char)
-          (while (progn
+  (let ((parse-sexp-ignore-comments t))
+    (and-let* ((statement-end (condition-case nil
+                                  (scan-sexps (point) 1)
+                                (scan-error))))
+      (cl-decf statement-end)
+      (save-excursion
+        (forward-char)
+        (with-syntax-table dialog-mode-parse-syntax-table
+          (cl-loop
+           while (progn
                    (comment-forward (point-max))
                    (< (point) statement-end))
-            (push (cl-case (char-after)
-                    (?#  (forward-sexp) 'object)
-                    (?$  (forward-sexp) 'variable)
-                    (?@  (forward-sexp) 'word)
-                    (?\( (forward-sexp) 'statement)
-                    (?\[ (forward-sexp) 'list)
-                    (t   (buffer-substring-no-properties
-                          (point)
-                          (progn (forward-sexp) (point)))))
-                  statement))
-          (nreverse statement))))))
+           collect (cl-case (char-after)
+                     (?#  (forward-sexp) 'object)
+                     (?$  (forward-sexp) 'variable)
+                     (?@  (forward-sexp) 'word)
+                     (?\( (forward-sexp) 'statement)
+                     (?\[ (forward-sexp) 'list)
+                     (t   (buffer-substring-no-properties
+                           (point)
+                           (progn (forward-sexp) (point)))))))))))
 
 (defun dialog--statement-token (statement)
   "Return the symbol representing the statement list STATEMENT."
