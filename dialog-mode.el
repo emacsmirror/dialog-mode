@@ -157,46 +157,6 @@
   :group 'languages
   :prefix "dialog-")
 
-;;;; Syntax table
-
-(defconst dialog-mode-syntax-table
-  (let ((table (make-syntax-table)))
-    ;; Set line comment start and end.
-    (modify-syntax-entry ?% ". 12" table)
-    (modify-syntax-entry ?\n ">" table)
-    ;; Set allowed symbol constituents.
-    (modify-syntax-entry ?! "_" table)
-    (modify-syntax-entry ?# "_" table)
-    (modify-syntax-entry ?$ "_" table)
-    (modify-syntax-entry ?& "_" table)
-    (modify-syntax-entry ?' "_" table)
-    (modify-syntax-entry ?+ "_" table)
-    (modify-syntax-entry ?- "_" table)
-    (modify-syntax-entry ?/ "_" table)
-    (modify-syntax-entry ?: "_" table)
-    (modify-syntax-entry ?< "_" table)
-    (modify-syntax-entry ?= "_" table)
-    (modify-syntax-entry ?> "_" table)
-    (modify-syntax-entry ?? "_" table)
-    (modify-syntax-entry ?\" "_" table)
-    (modify-syntax-entry ?\; "_" table)
-    (modify-syntax-entry ?^ "_" table)
-    (modify-syntax-entry ?_ "_" table)
-    (modify-syntax-entry ?` "_" table)
-    (modify-syntax-entry ?| "_" table)
-    ;; Set expression prefixes.
-    (modify-syntax-entry ?* "'" table)
-    (modify-syntax-entry ?@ "'" table)
-    (modify-syntax-entry ?~ "'" table)
-    ;; Set Escape character.
-    (modify-syntax-entry ?\\ "\\" table)
-    table))
-
-(defconst dialog-mode-parse-syntax-table
-  (let ((table (make-syntax-table dialog-mode-syntax-table)))
-    (modify-syntax-entry ?* "w" table)
-    table))
-
 ;;;; Search patterns
 
 (defmacro dialog-rx (&rest regexps)
@@ -1730,6 +1690,46 @@ a negative argument."
     "---"
     ["Browse the manual" dialog-browse-manual
      :help "Browse the Dialog manual in the default browser"]))
+
+;;;; Syntax table
+
+(defconst dialog-mode-syntax-table
+  (let ((table (make-syntax-table)))
+    ;; Set line comment start and end.
+    (modify-syntax-entry ?% ". 12" table)
+    (modify-syntax-entry ?\n ">" table)
+    ;; Set allowed symbol constituents.
+    (modify-syntax-entry ?! "_" table)
+    (modify-syntax-entry ?# "_" table)
+    (modify-syntax-entry ?$ "_" table)
+    (modify-syntax-entry ?& "_" table)
+    (modify-syntax-entry ?' "_" table)
+    (modify-syntax-entry ?+ "_" table)
+    (modify-syntax-entry ?- "_" table)
+    (modify-syntax-entry ?/ "_" table)
+    (modify-syntax-entry ?: "_" table)
+    (modify-syntax-entry ?< "_" table)
+    (modify-syntax-entry ?= "_" table)
+    (modify-syntax-entry ?> "_" table)
+    (modify-syntax-entry ?? "_" table)
+    (modify-syntax-entry ?\" "_" table)
+    (modify-syntax-entry ?\; "_" table)
+    (modify-syntax-entry ?^ "_" table)
+    (modify-syntax-entry ?_ "_" table)
+    (modify-syntax-entry ?` "_" table)
+    (modify-syntax-entry ?| "_" table)
+    ;; Set expression prefixes.
+    (modify-syntax-entry ?* "'" table)
+    (modify-syntax-entry ?@ "'" table)
+    (modify-syntax-entry ?~ "'" table)
+    ;; Set Escape character.
+    (modify-syntax-entry ?\\ "\\" table)
+    table))
+
+(defconst dialog-mode-parse-syntax-table
+  (let ((table (make-syntax-table dialog-mode-syntax-table)))
+    (modify-syntax-entry ?* "w" table)
+    table))
 
 ;;;; Mode
 
