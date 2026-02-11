@@ -968,13 +968,13 @@ Move 2 paragraphs at a time."
                 words...
                 %% comment 1
                 (par)
-                (bold)\*\*\* You have lost \*\*\*(roman)
+                (bold)\\*\\*\\* You have lost \\*\\*\\*(roman)
         (else)
                 (increase score by 1)
                 The message, neatly marked in the sawdust, reads...
                 %% comment 2
                 (par)
-                (bold)\*\*\* You have won \*\*\*(roman)
+                (bold)\\*\\*\\* You have won \\*\\*\\*(roman)
                 (testing)
         (endif)
         (game over)
@@ -986,7 +986,7 @@ Move 2 paragraphs at a time."
                             "(then)"
                             "words..."
                             "1"
-                            "***(roman)"
+                            "(roman)"
                             "(else)"
                             "reads..."
                             "2"
@@ -1015,13 +1015,13 @@ Move 2 paragraphs at a time."
                 words...
                 %% comment 1
                 (par)
-                (bold)\*\*\* You have lost \*\*\*(roman)
+                (bold)\\*\\*\\* You have lost \\*\\*\\*(roman)
         (else)
                 (increase score by 1)
                 The message, neatly marked in the sawdust, reads...
                 %% comment 2
                 (par)
-                (bold)\*\*\* You have won \*\*\*(roman)
+                (bold)\\*\\*\\* You have won \\*\\*\\*(roman)
                 (testing)
         (endif)
         (game over)
@@ -1055,13 +1055,13 @@ Move 2 paragraphs at a time."
                 words...
                 %% comment 1
                 (par)
-                (bold)\*\*\* You have lost \*\*\*(roman)
+                (bold)\\*\\*\\* You have lost \\*\\*\\*(roman)
         (else)
                 (increase score by 1)
                 The message, neatly marked in the sawdust, reads...
                 %% comment 2
                 (par)
-                (bold)\*\*\* You have won \*\*\*(roman)
+                (bold)\\*\\*\\* You have won \\*\\*\\*(roman)
                 (testing)
         (endif)
         (game over)
@@ -1104,13 +1104,13 @@ Move 2 paragraphs at a time."
                 words...
                 %% comment 1
                 (par)
-                (bold)\*\*\* You have lost \*\*\*(roman)
+                (bold)\\*\\*\\* You have lost \\*\\*\\*(roman)
         (else)
                 (increase score by 1)
                 The message, neatly marked in the sawdust, reads...
                 %% comment 2
                 (par)
-                (bold)\*\*\* You have won \*\*\*(roman)
+                (bold)\\*\\*\\* You have won \\*\\*\\*(roman)
                 (testing)
         (endif)
         (game over)
@@ -1146,13 +1146,13 @@ Move 2 paragraphs at a time."
                 words...
                 %% comment 1
                 (par)
-                (bold)\*\*\* You have lost \*\*\*(roman)
+                (bold)\\*\\*\\* You have lost \\*\\*\\*(roman)
         (else)
                 (increase score by 1)
                 The message, neatly marked in the sawdust, reads...
                 %% comment 2
                 (par)
-                (bold)\*\*\* You have won \*\*\*(roman)
+                (bold)\\*\\*\\* You have won \\*\\*\\*(roman)
                 (testing)
         (endif)
         (game over)
@@ -1164,13 +1164,13 @@ Move 2 paragraphs at a time."
                           "words..."
                           "1"
                           "(par)"
-                          "***(roman)"
+                          "(roman)"
                           "(else)"
                           "(increase score by 1)"
                           "reads..."
                           "2"
                           "(par)"
-                          "***(roman)"
+                          "(roman)"
                           "(testing)"
                           "(endif)"
                           "(game over)"
@@ -1195,13 +1195,13 @@ Move 2 paragraphs at a time."
                 words...
                 %% comment 1
                 (par)
-                (bold)\*\*\* You have lost \*\*\*(roman)
+                (bold)\\*\\*\\* You have lost \\*\\*\\*(roman)
         (else)
                 (increase score by 1)
                 The message, neatly marked in the sawdust, reads...
                 %% comment 2
                 (par)
-                (bold)\*\*\* You have won \*\*\*(roman)
+                (bold)\\*\\*\\* You have won \\*\\*\\*(roman)
                 (testing)
         (endif)
         (game over)
@@ -1211,13 +1211,13 @@ Move 2 paragraphs at a time."
     (dolist (string (list "(game over)"
                           "(endif)"
                           "(testing)"
-                          "***(roman)"
+                          "(roman)"
                           "(par)"
                           "2"
                           "reads..."
                           "(increase score by 1)"
                           "(else)"
-                          "***(roman)"
+                          "(roman)"
                           "(par)"
                           "1"
                           "it"
@@ -1246,13 +1246,13 @@ Move 2 paragraphs at a time."
                 words...
                 %% comment 1
                 (par)
-                (bold)\*\*\* You have lost \*\*\*(roman)
+                (bold)\\*\\*\\* You have lost \\*\\*\\*(roman)
         (else)
                 (increase score by 1)
                 The message, neatly marked in the sawdust, reads...
                 %% comment 2
                 (par)
-                (bold)\*\*\* You have won \*\*\*(roman)
+                (bold)\\*\\*\\* You have won \\*\\*\\*(roman)
                 (testing)
         (endif)
         (game over)
@@ -1267,13 +1267,13 @@ Move 2 paragraphs at a time."
                             "words..."
                             "1"
                             "(par)"
-                            "***(roman)"
+                            "(roman)"
                             "(else)"
                             "(increase score by 1)"
                             "reads..."
                             "2"
                             "(par)"
-                            "***(roman)"
+                            "(roman)"
                             "(testing)"
                             "(endif)"
                             "(game over)"
@@ -1300,13 +1300,13 @@ Move 2 paragraphs at a time."
                 words...
                 %% comment 1
                 (par)
-                (bold)\*\*\* You have lost \*\*\*(roman)
+                (bold)\\*\\*\\* You have lost \\*\\*\\*(roman)
         (else)
                 (increase score by 1)
                 The message, neatly marked in the sawdust, reads...
                 %% comment 2
                 (par)
-                (bold)\*\*\* You have won \*\*\*(roman)
+                (bold)\\*\\*\\* You have won \\*\\*\\*(roman)
                 (testing)
         (endif)
         (game over)
@@ -1317,10 +1317,10 @@ Move 2 paragraphs at a time."
       (dolist (string (list "(then)"
                             "the"
                             "1"
-                            "***(roman)"
+                            "(roman)"
                             "(increase score by 1)"
                             "2"
-                            "***(roman)"
+                            "(roman)"
                             "(endif)"
                             "(game over)"
                             "(game over)"))
@@ -1344,13 +1344,13 @@ Move 2 paragraphs at a time."
                 words...
                 %% comment 1
                 (par)
-                (bold)\*\*\* You have lost \*\*\*(roman)
+                (bold)\\*\\*\\* You have lost \\*\\*\\*(roman)
         (else)
                 (increase score by 1)
                 The message, neatly marked in the sawdust, reads...
                 %% comment 2
                 (par)
-                (bold)\*\*\* You have won \*\*\*(roman)
+                (bold)\\*\\*\\* You have won \\*\\*\\*(roman)
                 (testing)
         (endif)
         (game over)
@@ -1361,13 +1361,13 @@ Move 2 paragraphs at a time."
       (dolist (string (list "(game over)"
                             "(endif)"
                             "(testing)"
-                            "***(roman)"
+                            "(roman)"
                             "(par)"
                             "2"
                             "reads..."
                             "(increase score by 1)"
                             "(else)"
-                            "***(roman)"
+                            "(roman)"
                             "(par)"
                             "1"
                             "words..."
@@ -1400,13 +1400,13 @@ Move 2 paragraphs at a time."
                 words...
                 %% comment 1
                 (par)
-                (bold)\*\*\* You have lost \*\*\*(roman)
+                (bold)\\*\\*\\* You have lost \\*\\*\\*(roman)
         (else)
                 (increase score by 1)
                 The message, neatly marked in the sawdust, reads...
                 %% comment 2
                 (par)
-                (bold)\*\*\* You have won \*\*\*(roman)
+                (bold)\\*\\*\\* You have won \\*\\*\\*(roman)
                 (testing)
         (endif)
         (game over)
@@ -1415,10 +1415,10 @@ Move 2 paragraphs at a time."
     (let ((dialog-paragraph-delimiter t))
       (goto-char (point-max))
       (dolist (string (list "(endif)"
-                            "***(roman)"
+                            "(roman)"
                             "2"
                             "(increase score by 1)"
-                            "***(roman)"
+                            "(roman)"
                             "1"
                             "the"
                             "(then)"
