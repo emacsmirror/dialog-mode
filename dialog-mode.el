@@ -346,10 +346,14 @@ Prefer existing parser state PPSS over calling `syntax-ppss'."
     (end-of-line)
     (dialog--in-comment-p)))
 
-(defun dialog--list-end (start)
-  "Return the end position of the list which opens at position START."
+(defun dialog--list-end (&optional start)
+  "Return the end position of the list which opens at point.
+
+If START is supplied, use it as the start position instead of using the
+current position."
   (save-excursion
-    (goto-char start)
+    (when start
+      (goto-char start))
     (condition-case nil
         (let ((parse-sexp-ignore-comments t))
           (forward-sexp)
@@ -482,7 +486,7 @@ the statement."
 
 Assume that point is on unescaped opening parenthesis and outside of a
 comment."
-  (and-let* ((statement-end (dialog--list-end (point))))
+  (and-let* ((statement-end (dialog--list-end)))
     (save-excursion
       (forward-char)
       (let ((parse-sexp-ignore-comments t))
