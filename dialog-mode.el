@@ -159,39 +159,40 @@
 
 ;;;; Search patterns
 
-(defmacro dialog-rx (&rest regexps)
-  "Extended version of `rx' for translation of form REGEXPS."
-  `(rx-let ((dictionary-word
-             (seq ?@ (or
-                      ;; Match parser: !strchr("\n\r\t ()[]{}~*|%/", ch)
-                      (1+ (not (char whitespace
-                                     ?\( ?\) ?\[ ?\] ?\{ ?\} ?~ ?* ?| ?% ?/)))
-                      (seq ?\\ (char ?b ?d ?l ?n ?r ?s ?u)))))
-            (escape-sequence
-             (seq ?\\ (not control)))
-            (object
-             (seq ?# (1+ user-chars)))
-            (outline
-             (seq line-start (or rule-head-line
-                                 topic
-                                 (seq (>= 3 ?%)
-                                      (1+ whitespace)
-                                      (0+ not-newline)))))
-            (rule-head-line
-             (seq rule-head-start (1+ not-newline)))
-            (rule-head-start
-             (seq line-start (optional (or ?@ ?~)) ?\())
-            (topic
-             (seq line-start ?# (group (1+ user-chars))))
-            (unescaped
-             (seq (or line-start (not ?\\))
-                  (0+ ?\\ ?\\)))
-            (user-chars
-             (or (char alphanumeric)
-                 (char ?+ ?- ?< ?> ?_)))
-            (variable
-             (seq ?$ (1+ user-chars))))
-     (rx ,@regexps)))
+(eval-and-compile
+  (defmacro dialog-rx (&rest regexps)
+    "Extended version of `rx' for translation of form REGEXPS."
+    `(rx-let ((dictionary-word
+               (seq ?@ (or
+                        ;; Match parser: !strchr("\n\r\t ()[]{}~*|%/", ch)
+                        (1+ (not (char whitespace
+                                       ?\( ?\) ?\[ ?\] ?\{ ?\} ?~ ?* ?| ?% ?/)))
+                        (seq ?\\ (char ?b ?d ?l ?n ?r ?s ?u)))))
+              (escape-sequence
+               (seq ?\\ (not control)))
+              (object
+               (seq ?# (1+ user-chars)))
+              (outline
+               (seq line-start (or rule-head-line
+                                   topic
+                                   (seq (>= 3 ?%)
+                                        (1+ whitespace)
+                                        (0+ not-newline)))))
+              (rule-head-line
+               (seq rule-head-start (1+ not-newline)))
+              (rule-head-start
+               (seq line-start (optional (or ?@ ?~)) ?\())
+              (topic
+               (seq line-start ?# (group (1+ user-chars))))
+              (unescaped
+               (seq (or line-start (not ?\\))
+                    (0+ ?\\ ?\\)))
+              (user-chars
+               (or (char alphanumeric)
+                   (char ?+ ?- ?< ?> ?_)))
+              (variable
+               (seq ?$ (1+ user-chars))))
+       (rx ,@regexps))))
 
 ;;;; Font lock
 
@@ -484,21 +485,20 @@ comment."
   (and-let* ((statement-end (dialog--list-end (point))))
     (save-excursion
       (forward-char)
-      (with-syntax-table dialog-mode-parse-syntax-table
-        (let ((parse-sexp-ignore-comments t))
-          (cl-loop
-           while (progn
-                   (comment-forward (point-max))
-                   (< (point) statement-end))
-           collect (cl-case (char-after)
-                     (?#  (forward-sexp) 'object)
-                     (?$  (forward-sexp) 'variable)
-                     (?@  (forward-sexp) 'word)
-                     (?\( (forward-sexp) 'statement)
-                     (?\[ (forward-sexp) 'list)
-                     (t   (buffer-substring-no-properties
-                           (point)
-                           (progn (forward-sexp) (point)))))))))))
+      (let ((parse-sexp-ignore-comments t))
+        (cl-loop
+         while (progn
+                 (comment-forward (point-max))
+                 (< (point) statement-end))
+         collect (cl-case (char-after)
+                   (?#  (forward-sexp) 'object)
+                   (?$  (forward-sexp) 'variable)
+                   (?@  (forward-sexp) 'word)
+                   (?\( (forward-sexp) 'statement)
+                   (?\[ (forward-sexp) 'list)
+                   (t   (buffer-substring-no-properties
+                         (point)
+                         (progn (forward-sexp) (point))))))))))
 
 (defun dialog--statement-token (statement)
   "Return the symbol representing the statement list STATEMENT."
@@ -1704,6 +1704,7 @@ a negative argument."
     (modify-syntax-entry ?$ "_" table)
     (modify-syntax-entry ?& "_" table)
     (modify-syntax-entry ?' "_" table)
+    (modify-syntax-entry ?* "_" table)
     (modify-syntax-entry ?+ "_" table)
     (modify-syntax-entry ?- "_" table)
     (modify-syntax-entry ?/ "_" table)
@@ -1719,17 +1720,16 @@ a negative argument."
     (modify-syntax-entry ?` "_" table)
     (modify-syntax-entry ?| "_" table)
     ;; Set expression prefixes.
-    (modify-syntax-entry ?* "'" table)
     (modify-syntax-entry ?@ "'" table)
     (modify-syntax-entry ?~ "'" table)
     ;; Set Escape character.
     (modify-syntax-entry ?\\ "\\" table)
     table))
 
-(defconst dialog-mode-parse-syntax-table
-  (let ((table (make-syntax-table dialog-mode-syntax-table)))
-    (modify-syntax-entry ?* "w" table)
-    table))
+(defconst dialog-syntax-propertize-function
+  (syntax-propertize-rules
+   ((dialog-rx unescaped (group ?*) ?\()
+    (1 "'"))))
 
 ;;;; Mode
 
@@ -1751,6 +1751,7 @@ a negative argument."
   (setq-local normal-auto-fill-function #'dialog-do-auto-fill)
   (setq-local outline-level #'dialog-outline-level)
   (setq-local outline-regexp (dialog-rx outline))
+  (setq-local syntax-propertize-function dialog-syntax-propertize-function)
   (add-hook 'electric-indent-functions #'dialog-electric-indent nil t)
   (add-hook 'flymake-diagnostic-functions #'dialog-flymake nil t)
   ;; Flymake is using source files rather than buffers.
