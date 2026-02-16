@@ -55,6 +55,7 @@ Version @value{VERSION}.
 * Outline support::
 * Configuring game files::
 * Flymake support::
+* Xref support::
 * Interactive debugger::
 * Browsing the Dialog manual::
 
@@ -640,6 +641,51 @@ Compilation runs using the original source files, as determined by
 because of this Dialog Mode buffers default the value of
 @code{flymake-no-changes-timeout} to @code{nil} to avoid needlessly
 running the compiler as the buffer is being edited.
+
+
+@node Xref support
+@chapter Xref support
+@cindex Xref
+
+Dialog Mode supports @emph{definition} and @emph{reference} look-ups
+by pattern-matching the text which makes up a rule or query.  A
+look-up for @emph{definitions} will return all successful
+pattern-matches for syntax in a rule-head.  A look-up for
+@emph{references} will return all successful pattern-matches for
+syntax regardless of how it is indented.
+
+Pattern matches are made against the text that remains once all
+numbers, objects, variables, dictionary words, and references to the
+current topic have been removed.  Exceptions are made for the
+declarations of interfaces and global variables, in which case the
+inner-syntax form is used in-place of the syntax which appears at the
+top level of the declaration.  For example, the following lines will
+all successfully pattern-match with each other:
+
+@example dialog
+(increase score by 1)
+(increase score by $Delta)
+(interface (increase score by $<Delta))
+@end example
+
+The identifier for the lookup is the entirety of the syntax which
+makes up a rule or query, with white-space collapsed down to a single
+space character, and with comments removed.
+
+To locate the usage of specific names within the identifier, such as
+any rules or queries which include specific object names, it is
+recommended to search within the identifiers of all @emph{references}
+by using the command @code{xref-find-apropos} and entering a regular
+expression.
+
+@quotation
+Note: Xref functionality does not depend on any external programs to
+search for matches; searches are made by opening and searching the
+original source files of game, as determined by
+@code{dialog-game-files} (see @ref{Configuring game files}).  When a
+search is initiated, any source files which are not currently open
+will be opened and will remain open after the searches have ended.
+@end quotation
 
 
 @node Interactive debugger

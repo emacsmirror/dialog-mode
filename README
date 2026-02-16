@@ -9,6 +9,7 @@ files.  The following features are implemented:
    * Outline support for comments, rule-heads, and topics.
    * Comint support for running the Dialog debugger.
    * Flymake support.
+   * Xref support.
 
 See the manual for full details.
 

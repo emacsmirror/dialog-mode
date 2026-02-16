@@ -36,11 +36,10 @@
 (require 'comint)
 (require 'imenu)
 (require 'project)
+(require 'xref)
 (eval-when-compile
   (require 'cl-lib)
-  ;; For `when-let*' and `and-let*' in Emacs 28.
-  (when (< emacs-major-version 29)
-    (require 'subr-x)))
+  (require 'subr-x))
 
 ;;;; Faces
 
@@ -366,6 +365,16 @@ Return nil if point is not within a list.  Prefer existing parser state
 PPSS over calling `syntax-ppss'."
   (nth 1 (or ppss (syntax-ppss))))
 
+(defun dialog--normalize-string (string)
+  "Return a normalized version of STRING.
+
+Comments are removed.  Contiguous white-space is collapsed to a single
+space character."
+  (thread-last
+    string
+    (replace-regexp-in-string (dialog-rx unescaped "%%" (0+ not-newline)) "")
+    (replace-regexp-in-string (rx (1+ (or whitespace ?\C-j))) " ")))
+
 (defun dialog--paren-depth (&optional ppss)
   "Return the current parentheses depth.
 
@@ -479,6 +488,26 @@ the statement."
     (goto-char (dialog-statement-position block))
     (backward-prefix-chars)
     (zerop (current-column))))
+
+(cl-defgeneric dialog--syntax-definition (block)
+  "Return the syntax definition for BLOCK."
+  (ignore block))
+
+(cl-defmethod dialog--syntax-definition ((block dialog-statement))
+  "Return the syntax definition for BLOCK."
+  (if-let* ((forward-arg (pcase (dialog-statement-syntax block)
+                           (`("interface" ,_)         1)
+                           (`("global" "variable" ,_) 2))))
+      (save-excursion
+        (goto-char (1+ (dialog-statement-position block)))
+        (let ((parse-sexp-ignore-comments t))
+          (forward-sexp forward-arg))
+        (forward-comment (point-max))
+        (dialog--forward-prefix-chars)
+        (pcase (dialog--parse-block-at-point)
+          ((and (cl-type dialog-statement) inner-block)
+           (dialog-statement-syntax inner-block))))
+    (dialog-statement-syntax block)))
 
 (defun dialog--parse-statement-syntax ()
   "Parse the inner contents of a special statement list.
@@ -1609,6 +1638,149 @@ a negative argument."
   (interactive "p")
   (dialog-forward-paragraph (- arg)))
 
+;;;; Xref
+
+(defun dialog-xref--backend ()
+  "Return the xref backend for Dialog Mode."
+  'dialog)
+
+(defvar-local dialog-xref--identifier-cache nil
+  "Cons pair of `buffer-modified-tick' and an identifier alist.")
+
+(defun dialog-xref--get-cache ()
+  "Return the cache value from each buffer."
+  (cl-loop initially (dialog-xref--update-identifier-cache-maybe)
+           for game-file in dialog-game-files
+           for buffer = (set-buffer (get-file-buffer game-file))
+           collect (cons buffer (cdr dialog-xref--identifier-cache))))
+
+(defun dialog-xref--match-string-syntax (syntax1 syntax2)
+  "Match string elements in syntax lists SYNTAX1 and SYNTAX2.
+
+Return a non-nil value when both lists are the same length and when
+string elements in both lists have the same positions and are `equal'."
+  (cl-do
+      ((s1 syntax1 (cdr s1))
+       (s2 syntax2 (cdr s2)))
+      ((or (null s1) (null s2))
+       (and (null s1) (null s2)))
+    (when (or (stringp (car s1)) (stringp (car s2)))
+      (unless (equal (car s1) (car s2))
+        (cl-return)))))
+
+(defun dialog-xref--update-identifier-cache-maybe ()
+  "Update all identifier caches across all game-file buffers."
+  (cl-loop
+   for game-file in dialog-game-files
+   do (set-buffer (find-file-noselect game-file 'no-warnings))
+   when (derived-mode-p 'dialog-mode)
+   unless (eq (buffer-modified-tick) (car dialog-xref--identifier-cache))
+   do (setq
+       dialog-xref--identifier-cache
+       (cons (buffer-modified-tick)
+             (save-excursion
+               (save-restriction
+                 (widen)
+                 (goto-char (point-min))
+                 (cl-loop
+                  while (re-search-forward (dialog-rx unescaped ?\() nil t)
+                  for ppss = (syntax-ppss)
+                  unless (> (dialog--paren-depth ppss) 1)
+                  if (dialog--in-comment-p ppss)
+                  do (end-of-line)
+                  else
+                  collect (let* ((block (dialog--parse-block))
+                                 (start (dialog-statement-position block))
+                                 (end (1+ (dialog--list-end start)))
+                                 (syntax-string
+                                  (dialog--normalize-string
+                                   (buffer-substring-no-properties start end))))
+                            (goto-char end)
+                            (cons syntax-string block)))))))))
+
+(cl-defmethod xref-backend-apropos ((_backend (eql dialog)) pattern)
+  "Find all references matching PATTERN."
+  (cl-loop
+   for (buffer . string-block) in (dialog-xref--get-cache)
+   nconc (cl-loop
+          for (string . block) in string-block
+          when (string-match-p pattern string)
+          collect (xref-make string
+                             (xref-make-buffer-location
+                              buffer
+                              (dialog-statement-position block))))))
+
+(defvar dialog-xref--identifier-block-filter nil
+  "The function to use when filtering blocks used to generate xref results.")
+
+(cl-defmethod xref-backend-definitions ((backend (eql dialog)) identifier)
+  "Find definitions of IDENTIFIER using BACKEND."
+  (let ((dialog-xref--identifier-block-filter #'dialog--rule-head-p))
+    (xref-backend-references backend identifier)))
+
+(cl-defmethod xref-backend-identifier-at-point ((_backend (eql dialog)))
+  "Return the relevant identifier at point."
+  (save-excursion
+    (dialog--forward-prefix-chars)
+    (let (dialog-block-motion-push-mark)
+      (while (cl-plusp (dialog--paren-depth))
+        (dialog-up-block)))
+    (and (eq (char-after) ?\()
+         (looking-back (dialog-rx unescaped) (line-beginning-position))
+         (pcase (dialog--parse-block-at-point)
+           ((and (app dialog-statement-syntax syntax)
+                 (guard syntax))
+            (propertize
+             (dialog--normalize-string
+              (buffer-substring-no-properties (point) (1+ (dialog--list-end))))
+             'dialog-position (point)
+             'dialog-syntax syntax))))))
+
+(cl-defmethod xref-backend-identifier-completion-table ((_backend (eql dialog)))
+  "Return the completion table for identifiers."
+  (completion-table-dynamic
+   (lambda (_string)
+     (cl-loop for (nil . string-block) in (dialog-xref--get-cache)
+              append string-block))
+   'switch-buffer))
+
+(cl-defmethod xref-backend-references ((_backend (eql dialog)) identifier)
+  "Find references of IDENTIFIER."
+  (cl-loop
+   with cache = (dialog-xref--get-cache)
+   with properties = (text-properties-at 0 identifier)
+   with id-position = (plist-get properties 'dialog-position)
+   with id-syntax = (or
+                     ;; Syntax-list supplied from identifier-at-point.
+                     (plist-get properties 'dialog-syntax)
+                     ;; Find a syntax-list in one of the cache values.
+                     (cl-loop
+                      for (nil . string-block) in cache
+                      for block = (alist-get
+                                   (dialog--normalize-string identifier)
+                                   string-block
+                                   nil nil #'equal)
+                      when block
+                      return (dialog-statement-syntax block)))
+   for (buffer . string-block) in cache
+   nconc (cl-loop
+          for (string . block) in string-block
+          for block-position = (dialog-statement-position block)
+          ;; Skip the position corresponding to the identifier-at-point.
+          unless (and id-position (= block-position id-position))
+          ;; Only use blocks where the filter matches.
+          when (pcase dialog-xref--identifier-block-filter
+                 ((and (pred functionp) fn)
+                  (funcall fn block))
+                 (_
+                  t))
+          ;; Match string elements in the syntax-list.
+          when (dialog-xref--match-string-syntax
+                (dialog--syntax-definition block) id-syntax)
+          collect (xref-make
+                   string
+                   (xref-make-buffer-location buffer block-position)))))
+
 ;;;; Keymap
 
 (defvar dialog-mode-map
@@ -1766,6 +1938,7 @@ a negative argument."
   (add-hook 'flymake-diagnostic-functions #'dialog-flymake nil t)
   ;; Flymake is using source files rather than buffers.
   (setq-local flymake-no-changes-timeout nil)
+  (add-hook 'xref-backend-functions #'dialog-xref--backend nil t)
   (add-to-list 'font-lock-extend-region-functions
                #'dialog--font-lock-extend-region-syntax-form))
 

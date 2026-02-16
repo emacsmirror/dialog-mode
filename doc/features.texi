@@ -18,4 +18,6 @@ Outline support for comments, rule-heads, and topics.
 Comint support for running the Dialog debugger.
 @item
 Flymake support.
+@item
+Xref support.
 @end itemize
