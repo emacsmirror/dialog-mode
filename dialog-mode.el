@@ -330,9 +330,8 @@ bind special completion commands to the space and \"?\" keys."
 
 (defun dialog--forward-prefix-chars ()
   "Move forwards over characters with prefix syntax."
-  (unless (eobp)
-    (when (= (char-syntax (char-after)) ?')
-      (forward-same-syntax))))
+  (while (eq (car (syntax-after (point))) 6)
+    (forward-char)))
 
 (defun dialog--in-comment-p (&optional ppss)
   "Return a non-nil value when inside a comment.
