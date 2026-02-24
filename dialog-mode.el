@@ -490,18 +490,25 @@ comment."
       (forward-char)
       (let ((parse-sexp-ignore-comments t))
         (cl-loop
-         while (progn
-                 (comment-forward (point-max))
-                 (< (point) statement-end))
-         collect (cl-case (char-after)
-                   (?#  (forward-sexp) 'object)
-                   (?$  (forward-sexp) 'variable)
-                   (?@  (forward-sexp) 'word)
-                   (?\( (forward-sexp) 'statement)
-                   (?\[ (forward-sexp) 'list)
-                   (t   (buffer-substring-no-properties
-                         (point)
-                         (progn (forward-sexp) (point))))))))))
+         do (comment-forward (point-max))
+         do (dialog--forward-prefix-chars)
+         while (< (point) statement-end)
+         collect (pcase (cons (char-before) (char-after))
+                   (`(,_ . ?#)  (forward-sexp) 'object)
+                   (`(,_ . ?$)  (forward-sexp) 'variable)
+                   (`(,_ . ?*)  (forward-sexp) 'topic)
+                   ('(?* . ?\() (forward-sexp) 'mutli-query)
+                   ('(?@ . ?\() (forward-sexp) 'access-predicate)
+                   (`(?@ . ,_)  (forward-sexp) 'word)
+                   ('(?~ . ?\() (forward-sexp) 'not-query)
+                   (`(,_ . ?\() (forward-sexp) 'query)
+                   (`(,_ . ?\[) (forward-sexp) 'list)
+                   (_ (pcase (buffer-substring-no-properties
+                              (point)
+                              (progn (forward-sexp) (point)))
+                        ("0" 'number)
+                        ((rx bos (char (?1 . ?9)) (0+ numeric) eos) 'number)
+                        (string string)))))))))
 
 (defun dialog--statement-token (statement)
   "Return the symbol representing the statement list STATEMENT."
