@@ -1488,15 +1488,13 @@ REPORT-FN is Flymake's callback function."
                               (copy-marker (point) t)
                             (point)))
                     index)
-            (end-of-line)
-            ;; Move out of a comment.
-            (when-let* ((start (dialog--start-of-comment-or-string)))
-              (goto-char start))
-            ;; Move backwards through whitespace.
-            (forward-comment (- (point)))
-            ;; Create the index entry.
-            (let ((rule-head (buffer-substring-no-properties
-                              (match-beginning 0) (point))))
+            ;; Create an index entry for the rule-head.
+            (forward-char -1)
+            (let* ((end (dialog--list-end))
+                   (rule-head (dialog--normalize-string
+                               (buffer-substring-no-properties
+                                (match-beginning 0)
+                                (if end (1+ end) (line-end-position))))))
               (push
                ;; Prepend the topic if there is one and the rule uses it.
                (cons (if (and topic (dialog--rule-uses-topic-p))
