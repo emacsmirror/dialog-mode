@@ -397,13 +397,8 @@ existing parser state PPSS over calling `syntax-ppss'."
 (defun dialog--rule-uses-topic-p ()
   "Return a non-nil value when the rule at point references a topic."
   (save-excursion
-    (when (or
-           ;; Move out of a comment.
-           (and-let* ((start (dialog--start-of-comment-or-string)))
-             (goto-char start))
-           ;; Check if already looking at a rule-head.
-           (not (looking-at-p (dialog-rx rule-head-start))))
-      (dialog-beginning-of-defun))
+    (end-of-line)
+    (dialog-beginning-of-defun)
     ;; Search for an unescaped * in rule-head or body.
     (let ((bound (save-excursion
                    (dialog-end-of-defun)
