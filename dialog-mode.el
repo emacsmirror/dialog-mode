@@ -1474,34 +1474,30 @@ REPORT-FN is Flymake's callback function."
     (save-restriction
       (widen)
       (goto-char (point-min))
-      (let (index topic)
-        (while (re-search-forward (dialog-rx (or rule-head-start topic)) nil t)
-          (if (eq (char-after (match-beginning 0)) ?#)
-              ;; Store the current topic and add it to the index.
-              (push (cons (setq topic (match-string-no-properties 0))
-                          (if imenu-use-markers
-                              (copy-marker (point) t)
-                            (point)))
-                    index)
-            ;; Create an index entry for the rule-head.
-            (forward-char -1)
-            (let* ((end (dialog--list-end))
-                   (rule-head (dialog--normalize-string
-                               (buffer-substring-no-properties
-                                (match-beginning 0)
-                                (if end (1+ end) (line-end-position))))))
-              (push
-               ;; Prepend the topic if there is one and the rule uses it.
-               (cons (if (and topic (dialog--rule-uses-topic-p))
-                         (concat topic dialog-imenu-topic-separator rule-head)
-                       rule-head)
+      (cl-loop
+       with topic
+       while (re-search-forward (dialog-rx (or rule-head-start topic)) nil t)
+       for position = (match-beginning 0)
+       if (= (char-after position) ?#)  ; Topic.
+       collect (cons (setq topic (match-string-no-properties 0))
                      (if imenu-use-markers
-                         (copy-marker (point) t)
-                       (point)))
-               index))
-            ;; Don't re-match the previous match.
-            (dialog-end-of-defun)))
-        (nreverse index)))))
+                         (copy-marker position t)
+                       position))
+       else  ; Rule-head.
+       collect (let* ((end (progn (forward-char -1) (dialog--list-end)))
+                      (rule-head (dialog--normalize-string
+                                  (buffer-substring-no-properties
+                                   position
+                                   (if end (1+ end) (line-end-position))))))
+                 ;; Skip the rule-body for the next match.
+                 (dialog-end-of-defun)
+                 ;; Prepend the topic if there is one and the rule uses it.
+                 (cons (if (and topic (dialog--rule-uses-topic-p))
+                           (concat topic dialog-imenu-topic-separator rule-head)
+                         rule-head)
+                       (if imenu-use-markers
+                           (copy-marker position t)
+                         position)))))))
 
 ;;;; Outline
 
