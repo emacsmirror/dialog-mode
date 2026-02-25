@@ -754,6 +754,28 @@ Match when the escape character is escaped."
     (forward-line)
     (should (dialog--rule-uses-topic-p))))
 
+;;;; Outline
+
+(ert-deftest dialog-outline-levels ()
+  "Test Outline levels."
+  (dialog-mode-tests--with-temp-buffer
+      "
+%%% Level 1
+%%%% Level 2
+%%%%% Level 3
+#topic
+(rule head)
+@(rule head)
+~(rule head)"
+    (goto-char (point-min))
+    (dolist (expected `( 1 2 3
+                         ,(1- most-positive-fixnum)
+                         ,most-positive-fixnum
+                         ,most-positive-fixnum
+                         ,most-positive-fixnum))
+      (forward-line)
+      (should (= (dialog-outline-level) expected)))))
+
 ;;;; Paragraph motion
 
 (ert-deftest dialog-forward-paragraph-through-comments ()
