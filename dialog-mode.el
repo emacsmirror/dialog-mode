@@ -1255,14 +1255,14 @@ When a region is active, send the region, otherwise send the current line."
         ("[more]" (comint-send-string process "\n"))))))
 
 (defcustom dialog-debug-use-pty nil
-  "Specifies whether the debug process uses a Pty.
+  "Specifies whether the debug process uses a pseudo-terminal.
 
-A value of nil indicates to use a pipe instead of a Pty.  A value of t
-indicates to use a Pty.  The debug buffer needs to be recreated for
-changes to this variable to take effect.
+A value of nil indicates to use a pipe instead of a pseudo-terminal.  A
+value of t indicates to use a pseudo-terminal.  The debug buffer needs
+to be recreated for changes to this variable to take effect.
 
-Running the debug process in a Pty makes it work more like it would in
-traditional terminal."
+Running the debug process in a pseudo-terminal makes it work more like
+it would in traditional terminal."
   :type 'boolean
   :safe #'booleanp)
 
