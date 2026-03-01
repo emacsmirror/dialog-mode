@@ -993,27 +993,24 @@ support the display of text styling, set the value of
 Specifies whether the debug process runs using a pseudo-terminal.  A
 value of @code{nil} indicates to use pipes instead of a
 pseudo-terminal.  A value of @code{t} indicates to use a
-pseudo-terminal and that the function
-@code{dialog-debug-output-responder} should be added to the buffer
-local value of @code{comint-output-filter-functions} for the debug
-buffer.  Note that the debug buffer needs to be recreated for changes
-to this variable to take effect.
+pseudo-terminal.  Note that the debug buffer needs to be recreated for
+changes to this variable to take effect.
 @end defopt
 
 @cindex dismissing debugger prompts @subentry when debugging
-The customization variable @code{dialog-debug-use-output-responder}
-determines whether the output responder function will respond to game
-output by automatically dismissing any @samp{[more]} prompts which
-appear.  Its value can be toggled with the command
-@code{dialog-debug-toggle-output-responder}.
+The minor-mode @code{dialog-debug-auto-response-mode} can be enabled
+in @code{dialog-debug-mode} buffers to switch on automatic responses
+to game output.  This is useful when using a pseudo-terminal because
+debug output is potentially paged based on the debug buffer's current
+window height and the length of the output.
+@code{dialog-debug-auto-response-mode} will automatically dismiss any
+@samp{[more]} prompts which appear.  The command
+@code{dialog-debug-toggle-auto-response-mode} will enable or disable
+@code{dialog-debug-auto-response-mode} in the current debug buffer.
 
-@defopt dialog-debug-use-output-responder
-Specifies whether the @code{dialog-debug-output-responder} function
-should automatically respond to game output.
-@end defopt
-
-@defun dialog-debug-toggle-output-responder
-Toggle the current value of @code{dialog-debug-use-output-responder}.
+@defun dialog-debug-toggle-auto-response-mode
+Toggle the @code{dialog-debug-auto-response-mode} minor-mode in the
+current debug buffer.
 @end defun
 
 

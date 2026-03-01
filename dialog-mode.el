@@ -1223,33 +1223,36 @@ When a region is active, send the region, otherwise send the current line."
              (complete-with-action
               action dialog-debug-send-command-presets string pred))))))
 
-(defcustom dialog-debug-use-output-responder t
-  "Specifies whether the output filter should send responses.
+(define-minor-mode dialog-debug-auto-response-mode
+  "Enable automatic responses from Comint output filters."
+  :lighter " AutoResponse"
+  :interactive (dialog-debug-mode)
+  (if dialog-debug-auto-response-mode
+      (add-hook 'comint-output-filter-functions
+                #'dialog-debug-output-responder 90 t)
+    (remove-hook 'comint-output-filter-functions
+                 #'dialog-debug-output-responder t)))
 
-Sending responses is only relevant when the debug process is using a Pty
-and `dialog-debug-output-responder' has been added to the value
-`comint-output-filter-functions'.  See `dialog-debug-use-pty'."
-  :type 'boolean
-  :safe #'booleanp)
-
-(defun dialog-debug-toggle-output-responder ()
-  "Toggle the value of `dialog-debug-use-output-responder'."
+(defun dialog-debug-toggle-auto-response-mode ()
+  "Toggle `dialog-debug-auto-response-mode' in the current debug buffer."
   (interactive)
-  (setq dialog-debug-use-output-responder
-        (not dialog-debug-use-output-responder))
-  (message "Output responder is now %s" (if dialog-debug-use-output-responder
-                                            "enabled"
-                                          "disabled")))
+  (if-let* ((buffer (dialog-debug-buffer)))
+      (with-current-buffer buffer
+        (if dialog-debug-auto-response-mode
+            (dialog-debug-auto-response-mode -1)
+          (dialog-debug-auto-response-mode))
+        (message "Dialog-Debug-Auto-Response-Mode mode %s in buffer '%s'"
+                 (if dialog-debug-auto-response-mode "enabled" "disabled")
+                 buffer))
+    (user-error "No debug buffer exists")))
 
 (defun dialog-debug-output-responder (_string)
   "Respond to process output by sending additional input."
-  (when dialog-debug-use-output-responder
-    (when-let* ((process (get-buffer-process (current-buffer))))
-      (save-excursion
-        (goto-char (point-max))
-        (pcase (buffer-substring-no-properties
-                (line-beginning-position) (point))
-          ("[more]" (comint-send-string process "\n")))))))
+  (when-let* ((process (get-buffer-process (current-buffer))))
+    (save-excursion
+      (goto-char (point-max))
+      (pcase (buffer-substring-no-properties (line-beginning-position) (point))
+        ("[more]" (comint-send-string process "\n"))))))
 
 (defcustom dialog-debug-use-pty nil
   "Specifies whether the debug process uses a Pty.
@@ -1259,11 +1262,7 @@ indicates to use a Pty.  The debug buffer needs to be recreated for
 changes to this variable to take effect.
 
 Running the debug process in a Pty makes it work more like it would in
-traditional terminal and also signals that the filter function
-`dialog-debug-output-responder' should be added to the buffer local
-value of `comint-output-filter-functions' for the debug buffer.  This
-function allows \"[more]\" prompts to be dismissed automatically, see
-`dialog-debug-toggle-output-responder'."
+traditional terminal."
   :type 'boolean
   :safe #'booleanp)
 
@@ -1288,10 +1287,8 @@ function allows \"[more]\" prompts to be dismissed automatically, see
   (setq comint-process-echoes t)
   (setq-local comint-prompt-read-only t)
   (setq-local comint-prompt-regexp (rx line-start "> "))
-  (setq-local scroll-conservatively most-positive-fixnum)
-  (when (setq-local process-connection-type dialog-debug-use-pty)
-    (add-hook 'comint-output-filter-functions
-              #'dialog-debug-output-responder 90 t)))
+  (setq-local process-connection-type dialog-debug-use-pty)
+  (setq-local scroll-conservatively most-positive-fixnum))
 
 ;;;; Documentation look-up
 
@@ -1812,11 +1809,12 @@ string elements in both lists have the same positions and are `equal'."
      :style toggle
      :selected dialog-debug-use-pty
      :help "Enable running the Dialog debug program using a pseudo-terminal"]
-    ["Enable automatic debug output responder" dialog-debug-toggle-output-responder
-     :active dialog-debug-use-pty
+    ["Enable automatic debug output responses" dialog-debug-toggle-auto-response-mode
+     :active (dialog-debug-buffer)
      :style toggle
-     :selected dialog-debug-use-output-responder
-     :help "Enable sending automatic responses to debug output"]
+     :selected (with-current-buffer (dialog-debug-buffer)
+                 dialog-debug-auto-response-mode)
+     :help "Enable automatically sending responses to debug output"]
     ["Start the debug program" dialog-debug-run
      :active (not (dialog-debug-process))
      :help "Start the Dialog debug program"]
