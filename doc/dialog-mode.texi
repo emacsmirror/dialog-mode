@@ -652,7 +652,7 @@ by pattern-matching the text which makes up a rule or query.  A
 look-up for @emph{definitions} will return all successful
 pattern-matches for syntax in a rule-head.  A look-up for
 @emph{references} will return all successful pattern-matches for
-syntax regardless of how it is indented.
+syntax regardless of how that syntax is indented.
 
 Pattern matches are made against the text that remains once all
 numbers, objects, variables, dictionary words, and references to the
@@ -681,7 +681,7 @@ expression.
 @quotation
 Note: Xref functionality does not depend on any external programs to
 search for matches; searches are made by opening and searching the
-original source files of game, as determined by
+original source files of the current game, as determined by
 @code{dialog-game-files} (see @ref{Configuring game files}).  When a
 search is initiated, any source files which are not currently open
 will be opened and will remain open after the searches have ended.
