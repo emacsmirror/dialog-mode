@@ -973,7 +973,9 @@ value is by using directory local variables.")
 
 (defun dialog-debug-buffer ()
   "Return the current debug buffer."
-  (get-buffer dialog-debug-buffer-name))
+  (if (derived-mode-p 'dialog-debug-mode)
+      (current-buffer)
+    (get-buffer dialog-debug-buffer-name)))
 
 (defun dialog-debug-display-buffer ()
   "Display the current debug buffer."
@@ -1025,11 +1027,12 @@ argument, always prompt for the project root and the game files.
 
 If `dialog-debug-as-interp' is nil the debug program is started with no
 further process control and no associated buffer, otherwise it will be
-started in a `dialog-debug-mode' buffer.  An existing buffer will be
-re-used if its name matches `dialog-debug-buffer-name'; to support
-multiple processes rename an existing buffer with \\[rename-buffer] to
-allow the creation of a new one.  The currently used buffer will be
-displayed if it exists."
+started in a `dialog-debug-mode' buffer.  The current buffer will be
+re-used if its major mode is `dialog-debug-mode', otherwise an existing
+buffer will be re-used if its name matches `dialog-debug-buffer-name';
+to support multiple processes rename an existing buffer with
+\\[rename-buffer] to allow the creation of a new one.  The currently
+used buffer will be displayed if it exists."
   (interactive "P")
   (let ((buffer (and dialog-debug-as-interp
                      (or (dialog-debug-buffer)
@@ -1480,9 +1483,7 @@ it would in traditional terminal."
 
 (defun dialog-data-buffer (command)
   "Return the buffer containing the output of the COMMAND."
-  (and-let* ((debug-buffer (if (derived-mode-p 'dialog-debug-mode)
-                               (buffer-name)
-                             (dialog-debug-buffer))))
+  (and-let* ((debug-buffer (dialog-debug-buffer)))
     (get-buffer (dialog--derived-buffer-name
                  (buffer-name debug-buffer) command))))
 
