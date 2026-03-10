@@ -990,6 +990,16 @@ value is by using directory local variables.")
   "Specifies the name of the Dialog debugger executable."
   :type 'string)
 
+(defmacro dialog-debug--toggle-minor-mode (mode)
+  "Toggle the minor mode function MODE in the current debug buffer."
+  `(if-let* ((buffer (dialog-debug-buffer)))
+       (with-current-buffer buffer
+         (message ,(concat (capitalize (symbol-name mode))
+                           " mode %s in buffer '%s'")
+                  (if (if ,mode (,mode -1) (,mode)) "enabled" "disabled")
+                  buffer))
+     (user-error "No debug buffer exists")))
+
 (defcustom dialog-debug-as-interp (not (eq system-type 'windows-nt))
   "Specifies whether the debug program runs as a command interpreter.
 
@@ -1254,15 +1264,7 @@ When a region is active, send the region, otherwise send the current line."
 (defun dialog-debug-toggle-auto-response-mode ()
   "Toggle `dialog-debug-auto-response-mode' in the current debug buffer."
   (interactive)
-  (if-let* ((buffer (dialog-debug-buffer)))
-      (with-current-buffer buffer
-        (if dialog-debug-auto-response-mode
-            (dialog-debug-auto-response-mode -1)
-          (dialog-debug-auto-response-mode))
-        (message "Dialog-Debug-Auto-Response-Mode mode %s in buffer '%s'"
-                 (if dialog-debug-auto-response-mode "enabled" "disabled")
-                 buffer))
-    (user-error "No debug buffer exists")))
+  (dialog-debug--toggle-minor-mode dialog-debug-auto-response-mode))
 
 (defun dialog-debug-output-responder (_string)
   "Respond to process output by sending additional input."
@@ -1417,15 +1419,7 @@ it would in traditional terminal."
 (defun dialog-debug-toggle-auto-command-mode ()
   "Toggle `dialog-debug-auto-command-mode' in the current debug buffer."
   (interactive)
-  (if-let* ((buffer (dialog-debug-buffer)))
-      (with-current-buffer buffer
-        (if dialog-debug-auto-command-mode
-            (dialog-debug-auto-command-mode -1)
-          (dialog-debug-auto-command-mode))
-        (message "Dialog-Debug-Auto-Command-Mode mode %s in buffer '%s'"
-                 (if dialog-debug-auto-command-mode "enabled" "disabled")
-                 buffer))
-    (user-error "No debug buffer exists")))
+  (dialog-debug--toggle-minor-mode dialog-debug-auto-command-mode))
 
 ;;;;; Comint data collection and display.
 
