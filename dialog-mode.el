@@ -1309,6 +1309,7 @@ it would in traditional terminal."
   "Major mode for running the Dialog interactive debugger.
 
 \\<dialog-debug-mode-map>"
+  (hack-dir-local-variables-non-file-buffer)
   (setq comint-process-echoes t)
   (setq-local comint-prompt-read-only t)
   (setq-local comint-prompt-regexp (rx line-start "> "))
