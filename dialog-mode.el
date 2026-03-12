@@ -1273,7 +1273,7 @@ When a region is active, send the region, otherwise send the current line."
       (pcase (buffer-substring-no-properties (line-beginning-position) (point))
         ("[more]" (comint-send-string process "\n"))))))
 
-(defcustom dialog-debug-use-pty nil
+(defcustom dialog-debug-use-pty t
   "Specifies whether the debug process uses a pseudo-terminal.
 
 A value of nil indicates to use a pipe instead of a pseudo-terminal.  A

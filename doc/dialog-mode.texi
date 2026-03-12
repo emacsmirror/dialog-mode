@@ -987,9 +987,14 @@ Catch @{
 @cindex pseudo-terminal
 @cindex using a pseudo-terminal @subentry when debugging
 
-To make the debug process work more like it does in a terminal and
-support the display of text styling, set the value of
-@code{dialog-debug-use-pty} to @code{t}.
+To make the debug process work more like it does in a regular
+terminal, the value of @code{dialog-debug-use-pty} should be set to
+@code{t}, which is the recommended and default value.  The main
+benefits of using a pseudo-terminal are that the text output supports
+styling and will be automatically wrapped to the Emacs window size
+instead of assuming a fixed width.  Setting
+@code{dialog-debug-use-pty} to nil may be useful to completely avoid
+output paging.
 
 @defopt dialog-debug-use-pty
 Specifies whether the debug process runs using a pseudo-terminal.  A
