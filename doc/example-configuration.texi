@@ -24,7 +24,18 @@ features:
   (define-key dialog-mode-map (kbd "C-c C-j") #'imenu)
 
   ;; Revert to the old key-binding for M-q.
-  (define-key dialog-mode-map (kbd "M-q") #'fill-paragraph))
+  (define-key dialog-mode-map (kbd "M-q") #'fill-paragraph)
+
+  ;; Configure a buffer containing @@tree output to appear in a
+  ;; side-window on the right edge of the current Emacs frame.
+  (add-to-list 'display-buffer-alist
+               '("\\*.+-@@tree\\*"
+                 display-buffer-in-side-window
+                 (side . right)
+                 (slot . 0)
+                 (window-width . 32)
+                 (window-parameters
+                  . ((no-delete-other-windows . t))))))
 
 ;; Enable Speedbar support for Dialog files.
 (with-eval-after-load 'speedbar

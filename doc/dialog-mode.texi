@@ -1075,7 +1075,10 @@ derived from the current debug buffer name.  The commands
 @code{dialog-data-display-dynamic} and @code{dialog-data-display-tree}
 will display these buffers and have the key-bindings @kbd{C-c C-d d}
 and @kbd{C-c C-d t} respectively in @code{dialog-mode} and
-@code{dialog-debug-mode} buffers.
+@code{dialog-debug-mode} buffers.  It is presumed that any specific
+requirements around how or where @code{dialog-data-mode} buffers
+should be displayed will have been handled through the configuration
+of @code{display-buffer-alist} (see @ref{Example configuration}).
 
 @defun dialog-data-display-dynamic
 Display the buffer which contains data derived from the
