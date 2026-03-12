@@ -1009,7 +1009,7 @@ The minor-mode @code{dialog-debug-auto-response-mode} can be enabled
 in @code{dialog-debug-mode} buffers to switch on automatic responses
 to game output.  This is useful when using a pseudo-terminal because
 debug output is potentially paged based on the debug buffer's current
-window height and the length of the output.
+window dimensions and the length of the output.
 @code{dialog-debug-auto-response-mode} will automatically dismiss any
 @samp{[more]} prompts which appear.  The command
 @code{dialog-debug-toggle-auto-response-mode} will enable or disable
