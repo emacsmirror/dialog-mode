@@ -94,10 +94,10 @@ Interactive debugger
 * Using a pseudo-terminal::
 * Dismissing game prompts::
 * Viewing game state information::
+* Trace output::
 
 @end detailmenu
 @end menu
-
 
 @node Overview
 @chapter Overview
@@ -765,6 +765,7 @@ buffer and process is determined.
 * Using a pseudo-terminal::
 * Dismissing game prompts::
 * Viewing game state information::
+* Trace output::
 @end menu
 
 
@@ -1102,6 +1103,148 @@ current debug buffer.
 @defun dialog-debug-toggle-auto-command-mode
 Toggle the @code{dialog-debug-auto-command-mode} minor-mode in the
 current debug buffer.
+@end defun
+
+
+@node Trace output
+@section Trace output
+@cindex trace
+@cindex tracing
+@cindex following @subentry trace output
+
+Two minor modes are defined which are intended to operate in buffers
+which contain trace output, as produced by the Dialog debugger.  This
+includes enabling the minor modes directly in @code{dialog-debug-mode}
+buffers, where new trace output is generated in response to game
+actions and debug queries.
+
+The minor mode @code{dialog-trace-mode} is enabled in
+@code{dialog-debug-mode} buffers by default.  When enabled it
+propertizes the text of Dialog trace output in order to:
+
+@itemize @bullet
+@item
+Fontify the leading call depth indicators and the trailing source file
+reference to make them visually distinct from the rest of the line.
+@item
+Turn the source file reference into a button which is highlighted by
+the mouse cursor.  Activating the button will open the given file,
+switch to its buffer, and move point to the relevant line.
+@item
+Configure the entire line of trace output to be highlighted when point
+is anywhere inside the trace output.
+@item
+Assign the keymap @code{dialog-trace-map} which will be active when
+point is anywhere on the trace line.
+@end itemize
+
+@quotation Note
+Although this functionality is not dependent on any other specific
+modes, identifying the source file links in trace output does require
+that the value of @code{dialog-game-files} is set correctly (see
+@ref{Configuring game files}).
+@end quotation
+
+With @code{@code{dialog-trace-mode}} enabled, the following commands
+have key-bindings when point is anywhere on the trace line:
+
+@multitable {@kbd{RET}} {@code{dialog-trace-display-file-ref}}
+@headitem Key-binding @tab Command
+@kindex RET
+@item @kbd{RET} @tab @code{dialog-trace-pop-to-file-ref}
+@kindex o
+@item @kbd{o} @tab @code{dialog-trace-display-file-ref}
+@kindex n
+@item @kbd{n} @tab @code{dialog-trace-forward}
+@kindex p
+@item @kbd{p} @tab @code{dialog-trace-backward}
+@kindex f
+@item @kbd{f} @tab @code{dialog-trace-follow-mode}
+@end multitable
+
+@defun dialog-trace-display-file-ref
+Switch to the buffer and move to the line number of the file which is
+referenced in the trace line at point.  The file will be opened if not
+already open.  The customization variable
+@code{dialog-trace-display-buffer-action} defines how and where the
+buffer should be displayed.
+@end defun
+
+@defun dialog-trace-pop-to-file-ref
+Display the buffer and move within the window to the line number of
+the file which is referenced in the trace line at point.  The
+displayed buffer is not selected.  The file will be opened if not
+already open.  The customization variable
+@code{dialog-trace-pop-to-buffer-action} defines how and where the
+buffer should be displayed.
+@end defun
+
+@defun dialog-trace-forward
+Move forwards to the end of the next region of trace output.
+@end defun
+
+@defun dialog-trace-backward
+Move backwards to the start of the previous region of trace output.
+@end defun
+
+The minor mode @code{dialog-trace-follow-mode} enables functionality
+which displays source files when trace motions commands such as
+@code{dialog-trace-forward} and @code{dialog-trace-backward} are used,
+automatically calling @code{dialog-trace-display-file-ref} when moving
+between trace lines.  For this feature to work it is required that
+@code{dialog-trace-mode} also be enabled.  The customization variable
+@code{dialog-trace-follow-restore-window-configuration} determines
+whether the window configuration is modified when
+@code{dialog-trace-follow-mode} is disabled.
+
+@defopt dialog-trace-follow-restore-window-configuration
+Specifies whether the window configuration which was current when
+@code{dialog-trace-follow-mode} was enabled should be reapplied when
+the mode is disabled.  A non-nil value indicates that the window
+configuration should be applied.
+@end defopt
+
+When combined with the standard minor mode hook, restoring the window
+configuration provides a straight-forward way to temporarily use the
+full frame while @code{dialog-trace-follow-mode} is enabled:
+
+@example lisp
+;; Configure `dialog-trace-follow-mode' to delete other windows when
+;; enabled and restore the original window configuration when
+;; disabled.
+(setq dialog-trace-follow-restore-window-configuration t)
+(add-hook 'dialog-trace-follow-mode-hook
+          (lambda ()
+            (when dialog-trace-follow-mode
+              (delete-other-windows))))
+@end example
+
+To highlight lines or recenter buffers as source files are shown, the
+customization variables @code{dialog-trace-display-file-ref-hook} and
+@code{dialog-trace-pop-to-file-ref-hook} define hooks which are run by
+@code{dialog-trace-display-file-ref} and
+@code{dialog-trace-pop-to-file-ref} respectively.
+
+@defopt dialog-trace-display-file-ref-hook
+A hook which is run after displaying a trace file reference.
+@end defopt
+
+@defopt dialog-trace-pop-to-file-ref-hook
+A hook which is run after popping to a trace file reference.
+@end defopt
+
+The commands @code{dialog-debug-toggle-trace-mode} and
+@code{dialog-debug-toggle-trace-follow-mode} can be used to enable or
+disable either minor mode in the current debug buffer.
+
+@defun dialog-debug-toggle-trace-mode
+Toggle the @code{dialog-debug-toggle-trace-mode} minor mode in the
+current debug buffer.
+@end defun
+
+@defun dialog-debug-toggle-trace-follow-mode
+Toggle the @code{dialog-debug-toggle-trace-follow-mode} minor mode in
+the current debug buffer.
 @end defun
 
 

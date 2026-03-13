@@ -1311,7 +1311,8 @@ it would in traditional terminal."
   (setq-local comint-prompt-regexp (rx line-start "> "))
   (setq-local process-connection-type dialog-debug-use-pty)
   (setq-local scroll-conservatively most-positive-fixnum)
-  (add-hook 'dialog-debug-mode-hook #'dialog-debug-auto-command-mode))
+  (add-hook 'dialog-debug-mode-hook #'dialog-debug-auto-command-mode)
+  (add-hook 'dialog-debug-mode-hook #'dialog-trace-mode))
 
 ;;;;; Comint auto-commands
 
@@ -1855,6 +1856,265 @@ a negative argument."
   (interactive "p")
   (dialog-forward-paragraph (- arg)))
 
+;;;; Trace output
+
+(defcustom dialog-trace-display-buffer-action
+  '((display-buffer-reuse-window display-buffer-in-previous-window)
+    (inhibit-same-window . t)
+    (inhibit-switch-frame . t)
+    (reusable-frames . visible))
+  "The display action used when displaying file from trace output."
+  :type display-buffer--action-custom-type
+  :risky t)
+
+(defun dialog-trace--display-file-line (file line)
+  "Display a buffer for FILE and move point to line number LINE."
+  (when-let* ((buffer (find-file-noselect file))
+              (window (display-buffer
+                       buffer dialog-trace-display-buffer-action)))
+    (with-selected-window window
+      (save-restriction
+        (widen)
+        (goto-char (point-min))
+        (forward-line (1- line))))))
+
+(defcustom dialog-trace-pop-to-buffer-action
+  '((display-buffer-reuse-window display-buffer-in-previous-window)
+    (inhibit-same-window . t))
+  "The display action used when switching to a file from trace output."
+  :type display-buffer--action-custom-type
+  :risky t)
+
+(defun dialog-trace--pop-to-file-line (file line)
+  "Pop to a buffer for FILE and move point to line number LINE."
+  (when-let* ((buffer (find-file-noselect file)))
+    (when (pop-to-buffer buffer dialog-trace-pop-to-buffer-action)
+      (save-restriction
+        (widen)
+        (goto-char (point-min))
+        (forward-line (1- line))))))
+
+(defun dialog-trace--file-and-line-ref ()
+  "Return the file and line reference for the current trace output line."
+  (save-excursion
+    (beginning-of-line)
+    (get-text-property (point) 'dialog-trace-file)))
+
+(defcustom dialog-trace-display-file-ref-hook nil
+  "A hook which is run after displaying a trace file reference."
+  :type 'hook)
+
+(defun dialog-trace-display-file-ref ()
+  "Display the buffer of the file referenced in the current trace line."
+  (interactive)
+  (pcase (dialog-trace--file-and-line-ref)
+    (`(,file . ,line)
+     (dialog-trace--display-file-line file line)
+     (run-hooks 'dialog-trace-display-file-ref-hook))
+    (_
+     (user-error "No file reference on this line"))))
+
+(defcustom dialog-trace-pop-to-file-ref-hook nil
+  "A hook which is run after popping to a trace file reference."
+  :type 'hook)
+
+(defun dialog-trace-pop-to-file-ref ()
+  "Pop to the buffer of the file referenced in the current trace line."
+  (interactive)
+  (pcase (dialog-trace--file-and-line-ref)
+    (`(,file . ,line)
+     (dialog-trace--pop-to-file-line file line)
+     (run-hooks 'dialog-trace-pop-to-file-ref-hook))
+    (_
+     (user-error "No file reference on this line"))))
+
+(defun dialog-trace-mouse-click (event)
+  "Handle mouse click EVENT on a trace line."
+  (interactive "e")
+  (pcase (save-excursion
+           (posn-set-point (event-end event))
+           (dialog-trace--file-and-line-ref))
+    (`(,file . ,line)
+     (dialog-trace--pop-to-file-line file line)
+     (run-hooks 'dialog-trace-pop-to-file-ref-hook))
+    (_
+     (user-error "No file reference at this click position"))))
+
+(defvar dialog-trace-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "RET") #'dialog-trace-pop-to-file-ref)
+    (define-key map (kbd "f") #'dialog-trace-follow-mode)
+    (define-key map (kbd "n") #'dialog-trace-forward)
+    (define-key map (kbd "o") #'dialog-trace-display-file-ref)
+    (define-key map (kbd "p") #'dialog-trace-backward)
+    (define-key map [mouse-2] #'dialog-trace-mouse-click)
+    map))
+
+(defvar-local dialog-trace-file-regexp nil
+  "The regular expression to match a trace line with a file reference.")
+
+(defun dialog-trace--propertize (beg end)
+  "Process trace output between BEG and END to add text-properties."
+  (goto-char end)
+  (setq end (line-end-position))
+  (goto-char beg)
+  (beginning-of-line)
+  (setq beg (point))
+  (with-silent-modifications
+    (while (re-search-forward
+            (rx line-start (group (1+ "| ")) (1+ not-newline) line-end) end t)
+      ;; Propertize the call depth indicators.
+      (add-text-properties
+       (match-beginning 1)
+       (match-end 1)
+       '( font-lock-face font-lock-comment-face))
+      ;; Propertize the entire line.
+      (add-text-properties
+       (line-beginning-position)
+       (point)
+       `( cursor-face underline
+          dialog-trace-line t
+          keymap ,dialog-trace-map))
+      ;; Propertize the file and line reference, if present.
+      (save-excursion
+        (beginning-of-line)
+        (when (looking-at dialog-trace-file-regexp)
+          ;; Make a button.
+          (add-text-properties
+           (match-beginning 1)
+           (match-end 2)
+           `( follow-link t
+              font-lock-face font-lock-comment-face
+              help-echo "mouse-2: visit this file in other window"
+              mouse-face highlight))
+          ;; Store the file and line number.
+          (add-text-properties
+           (point)
+           (line-end-position)
+           `( dialog-trace-file ,(cons (match-string-no-properties 1)
+                                       (string-to-number
+                                        (match-string-no-properties 2)))))))))
+  `(jit-lock-bounds ,beg . ,end))
+
+(defun dialog-trace--unpropertize ()
+  "Remove trace-mode related text-properties from trace output."
+  (save-excursion
+    (save-restriction
+      (widen)
+      (goto-char (point-min))
+      (with-silent-modifications
+        (cl-loop
+         for prop-match = (text-property-search-forward 'dialog-trace-line)
+         while prop-match
+         do (remove-text-properties
+             (prop-match-beginning prop-match)
+             (prop-match-end prop-match)
+             ;; There is an assumption here that all property-names being
+             ;; removed haven't been modified by or originally belonged to
+             ;; functionality from unrelated modes.
+             '( cursor-face nil
+                dialog-trace-line nil
+                font-lock-face nil
+                help-echo nil
+                keymap nil
+                mouse-face nil)))))))
+
+;;;###autoload
+(define-minor-mode dialog-trace-mode
+  "Propertize and enable keymaps for Dialog trace output."
+  :interactive t
+  (cond (dialog-trace-mode
+         (setq dialog-trace-file-regexp
+               (rx-to-string '(seq
+                               line-start
+                               ?|
+                               (1+ not-newline)
+                               " "
+                               (group (eval (cons 'or dialog-game-files)))
+                               ?:
+                               (group (1+ numeric))
+                               line-end)
+                             'no-group))
+         (jit-lock-register #'dialog-trace--propertize)
+         (cursor-face-highlight-mode)
+         ;; Run now on the entire buffer, otherwise text-property searches are
+         ;; limited to the visible portion of the buffer.
+         (jit-lock-fontify-now))
+        (t
+         (jit-lock-unregister #'dialog-trace--propertize)
+         (cursor-face-highlight-mode -1)
+         (dialog-trace--unpropertize))))
+
+(defun dialog-debug-toggle-trace-mode ()
+  "Toggle `dialog-trace-mode' in the current debug buffer."
+  (interactive)
+  (dialog-debug--toggle-minor-mode dialog-trace-mode))
+
+(defcustom dialog-trace-follow-restore-window-configuration nil
+  "Specifies how `dialog-trace-follow-mode' handles window configuration.
+
+When the value is non-nil the window configuration at the time
+`dialog-trace-follow-mode' is enabled will be restored when the mode is
+disabled."
+  :type 'boolean
+  :safe #'booleanp)
+
+(defvar-local dialog-trace-follow-window-configuration nil
+  "The window configuration to be restored by `dialog-trace-follow-mode'.")
+
+;;;###autoload
+(define-minor-mode dialog-trace-follow-mode
+  "Enable automatic display of the current trace line.
+
+This only affects navigation commands such as `dialog-trace-forward' and
+`dialog-trace-backward' rather than any command which moves point
+between lines."
+  :lighter " TraceFollow"
+  :interactive t
+  (cond (dialog-trace-follow-mode
+         ;; Enable `dialog-trace-mode' if not already enabled.
+         (unless dialog-trace-mode
+           (dialog-trace-mode))
+         (setq dialog-trace-follow-window-configuration
+               (current-window-configuration)))
+        (dialog-trace-follow-restore-window-configuration
+         (set-window-configuration dialog-trace-follow-window-configuration))))
+
+(defun dialog-debug-toggle-trace-follow-mode ()
+  "Toggle `dialog-trace-follow-mode' in the current debug buffer."
+  (interactive)
+  (dialog-debug--toggle-minor-mode dialog-trace-follow-mode))
+
+(defun dialog-trace-forward (&optional arg interactive)
+  "Move forwards ARG trace output lines.
+
+When calls are INTERACTIVE and `dialog-trace-follow-mode' is enabled,
+display the file which is referenced in the current trace line at the
+appropriate line number."
+  (interactive "p\np")
+  (unless arg (setq arg 1))
+  (let* ((forwards (cl-plusp arg))
+         (from-line (line-number-at-pos))
+         (inc-fn (if forwards #'1- #'1+))
+         (search-fn (if forwards
+                        #'text-property-search-forward
+                      #'text-property-search-backward)))
+    (while (and (not (zerop arg))
+                (funcall search-fn 'dialog-trace-line t #'eq t))
+      (setq arg (funcall inc-fn arg)))
+    (when (and interactive dialog-trace-follow-mode)
+      (unless (eq (line-number-at-pos) from-line)
+        (dialog-trace-display-file-ref)))))
+
+(defun dialog-trace-backward (&optional arg interactive)
+  "Move backwards ARG trace output lines.
+
+See the function `dialog-trace-forward' for a description of how
+INTERACTIVE calls are handled."
+  (interactive "p\np")
+  (unless arg (setq arg 1))
+  (dialog-trace-forward (- arg) interactive))
+
 ;;;; Xref
 
 (defun dialog-xref--backend ()
@@ -2054,6 +2314,18 @@ string elements in both lists have the same positions and are `equal'."
      :selected (and-let* ((buffer (dialog-debug-buffer)))
                  (buffer-local-value 'dialog-debug-auto-response-mode buffer))
      :help "Enable automatically sending responses to debug output"]
+    ["Enable trace highlighting and keymaps" dialog-debug-toggle-trace-mode
+     :active (dialog-debug-buffer)
+     :style toggle
+     :selected (and-let* ((buffer (dialog-debug-buffer)))
+                 (buffer-local-value 'dialog-trace-mode buffer))
+     :help "Enable highlighting and add keymaps to trace output"]
+    ["Enable automatic display of trace source files" dialog-debug-toggle-trace-follow-mode
+     :active (dialog-debug-buffer)
+     :style toggle
+     :selected (and-let* ((buffer (dialog-debug-buffer)))
+                 (buffer-local-value 'dialog-trace-follow-mode buffer))
+     :help "Enable automatic display of source files referenced in trace output"]
     ["Start the debug program" dialog-debug-run
      :active (not (dialog-debug-process))
      :help "Start the Dialog debug program"]
