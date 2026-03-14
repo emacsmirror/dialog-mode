@@ -2045,14 +2045,14 @@ string elements in both lists have the same positions and are `equal'."
     ["Enable automatic debug command sending" dialog-debug-toggle-auto-command-mode
      :active (dialog-debug-buffer)
      :style toggle
-     :selected (with-current-buffer (dialog-debug-buffer)
-                 dialog-debug-auto-command-mode)
+     :selected (and-let* ((buffer (dialog-debug-buffer)))
+                 (buffer-local-value 'dialog-debug-auto-command-mode buffer))
      :help "Enable automatically sending debug commands at the debug prompt"]
     ["Enable automatic debug output responses" dialog-debug-toggle-auto-response-mode
      :active (dialog-debug-buffer)
      :style toggle
-     :selected (with-current-buffer (dialog-debug-buffer)
-                 dialog-debug-auto-response-mode)
+     :selected (and-let* ((buffer (dialog-debug-buffer)))
+                 (buffer-local-value 'dialog-debug-auto-response-mode buffer))
      :help "Enable automatically sending responses to debug output"]
     ["Start the debug program" dialog-debug-run
      :active (not (dialog-debug-process))
