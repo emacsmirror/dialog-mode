@@ -54,34 +54,22 @@
   `((default ,(and (facep 'font-lock-bracket-face)
                    (list :inherit 'font-lock-bracket-face))))
   "Face to highlight Dialog braces.")
-(defvar dialog-brace-face
-  'dialog-brace-face
-  "Font-lock face specification to highlight Dialog braces.")
 
 (defface dialog-bracket-face
   ;; `font-lock-bracket-face' appeared in Emacs 29.
   `((default ,(and (facep 'font-lock-bracket-face)
                    (list :inherit 'font-lock-bracket-face))))
   "Face to highlight Dialog brackets.")
-(defvar dialog-bracket-face
-  'dialog-bracket-face
-  "Font-lock face specification to highlight Dialog brackets.")
 
 (defface dialog-delimiter-face
   ;; `font-lock-delimiter-face' appeared in Emacs 29.
   `((default ,(and (facep 'font-lock-delimiter-face)
                    (list :inherit 'font-lock-delimiter-face))))
   "Face to highlight a Dialog delimiter.")
-(defvar dialog-delimiter-face
-  'dialog-delimiter-face
-  "Font-lock face specification to highlight a Dialog delimiter.")
 
 (defface dialog-dictionary-word-face
   '((default :inherit font-lock-type-face))
   "Face to highlight a Dialog dictionary word.")
-(defvar dialog-dictionary-word-face
-  'dialog-dictionary-word-face
-  "Font-lock face specification to highlight a Dialog dictionary word.")
 
 (defface dialog-escape-sequence-face
   ;; `font-lock-escape-face' appeared in Emacs 29.
@@ -89,62 +77,38 @@
                            'font-lock-escape-face
                          'escape-glyph)))
   "Face to highlight a Dialog escape sequence.")
-(defvar dialog-escape-sequence-face
-  'dialog-escape-sequence-face
-  "Font-lock face specification to highlight a Dialog escape sequence.")
 
 (defface dialog-object-name-face
   '((default :inherit font-lock-constant-face))
   "Face to highlight a Dialog object name.")
-(defvar dialog-object-name-face
-  'dialog-object-name-face
-  "Font-lock face specification to highlight a Dialog object name.")
 
 (defface dialog-operator-face
   ;; `font-lock-operator-face' appeared in Emacs 29.
   `((default ,(and (facep 'font-lock-operator-face)
                    (list :inherit 'font-lock-operator-face))))
   "Face to highlight a Dialog operator.")
-(defvar dialog-operator-face
-  'dialog-operator-face
-  "Font-lock face specification to highlight a Dialog operator.")
 
 (defface dialog-paren-face
   ;; `font-lock-bracket-face' appeared in Emacs 29.
   `((default ,(and (facep 'font-lock-bracket-face)
                    (list :inherit 'font-lock-bracket-face))))
   "Face to highlight Dialog parenthesis.")
-(defvar dialog-paren-face
-  'dialog-paren-face
-  "Font-lock face specification to highlight Dialog parenthesis.")
 
 (defface dialog-special-block-face
   '((default :inherit font-lock-keyword-face))
   "Face to highlight a Dialog special block.")
-(defvar dialog-special-block-face
-  'dialog-special-block-face
-  "Font-lock face specification to highlight Dialog special block syntax.")
 
 (defface dialog-topic-name-face
   '((default :inherit font-lock-preprocessor-face))
   "Face to highlight a Dialog topic name.")
-(defvar dialog-topic-name-face
-  'dialog-topic-name-face
-  "Font-lock face specification to highlight a Dialog topic name.")
 
 (defface dialog-variable-name-face
   '((default :inherit font-lock-variable-name-face))
   "Face to highlight a Dialog variable name.")
-(defvar dialog-variable-name-face
-  'dialog-variable-name-face
-  "Font-lock face specification to highlight a Dialog variable name.")
 
 (defface dialog-warning-face
   '((default :inherit font-lock-warning-face))
   "Face to highlight a Dialog warning.")
-(defvar dialog-warning-face
-  'dialog-warning-face
-  "Font-lock face specification to highlight a Dialog warning.")
 
 ;;;; Customization
 
@@ -215,7 +179,7 @@ in the forwards direction."
            (setq font-lock-beg list-start)))))
 
 (defconst dialog-font-lock-keywords-1
-  `((,(dialog-rx topic) . dialog-topic-name-face))
+  `((,(dialog-rx topic) . 'dialog-topic-name-face))
   "Font lock keywords for level 1 highlighting in Dialog mode.
 
 Highlights Dialog topics.")
@@ -232,27 +196,27 @@ Highlights Dialog topics.")
   (append
    dialog-font-lock-keywords-1
    `((,(dialog-rx unescaped (group dictionary-word))
-      (1 dialog-dictionary-word-face))
-     (,(dialog-rx escape-sequence)   . dialog-escape-sequence-face)
-     (,(dialog-rx object)            . dialog-object-name-face)
-     (,(dialog-rx variable)          . dialog-variable-name-face)
+      (1 'dialog-dictionary-word-face))
+     (,(dialog-rx escape-sequence)   . 'dialog-escape-sequence-face)
+     (,(dialog-rx object)            . 'dialog-object-name-face)
+     (,(dialog-rx variable)          . 'dialog-variable-name-face)
      ;; Prefix syntax before ( or { is an operator.
      (,(rx (group (syntax ?')) (or ?\( ?\{))
-      (1 dialog-operator-face))
+      (1 'dialog-operator-face))
      ;; $ or * not at the top-level is an operator.
      (,(rx (or ?$ ?*))
       ,(rx point (or ?$ ?*))
       (dialog--font-lock-prematch-special-character)
       nil
-      (0 dialog-operator-face))
+      (0 'dialog-operator-face))
      ;; | not at the top-level is a delimiter.
      (,(rx ?|)
       ,(rx point ?|)
       (dialog--font-lock-prematch-special-character)
       nil
-      (0 dialog-delimiter-face))
+      (0 'dialog-delimiter-face))
      ;; A special character anywhere else is an error.
-     (,(rx (char ?# ?$ ?* ?@ ?\\ ?| ?~)) . dialog-warning-face)))
+     (,(rx (char ?# ?$ ?* ?@ ?\\ ?| ?~)) . 'dialog-warning-face)))
   "Font lock keywords for level 2 highlighting in Dialog mode.
 
 Highlights escape sequences, special characters, and user defined names
@@ -289,16 +253,16 @@ for dictionary words, objects, and variables.")
 (defconst dialog-font-lock-keywords-3
   (append
    dialog-font-lock-keywords-2
-   `((,(rx (or ?\{ ?\})) . dialog-brace-face)
-     (,(rx (or ?\[ ?\])) . dialog-bracket-face)
-     (,(rx ?\))          . dialog-paren-face)
+   `((,(rx (or ?\{ ?\})) . 'dialog-brace-face)
+     (,(rx (or ?\[ ?\])) . 'dialog-bracket-face)
+     (,(rx ?\))          . 'dialog-paren-face)
      ;; Opening paren and leading words of block-defining syntax.
      (,(dialog-rx unescaped (group ?\())
-      (1 dialog-paren-face)
+      (1 'dialog-paren-face)
       (,(rx (1+ word))
        (dialog--font-lock-prematch-block)
        nil
-       (0 dialog-special-block-face)))))
+       (0 'dialog-special-block-face)))))
   "Font lock keywords for level 3 highlighting in Dialog mode.
 
 Highlights selected Dialog special syntax, braces, brackets,
