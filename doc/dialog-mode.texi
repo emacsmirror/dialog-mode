@@ -1008,7 +1008,7 @@ changes to this variable to take effect.
 
 @cindex dismissing debugger prompts @subentry when debugging
 @findex dialog-debug-auto-response-mode
-The minor-mode @code{dialog-debug-auto-response-mode} can be enabled
+The minor mode @code{dialog-debug-auto-response-mode} can be enabled
 in @code{dialog-debug-mode} buffers to switch on automatic responses
 to game output.  This is useful when using a pseudo-terminal because
 debug output is potentially paged based on the debug buffer's current
@@ -1019,7 +1019,7 @@ window dimensions and the length of the output.
 @code{dialog-debug-auto-response-mode} in the current debug buffer.
 
 @defun dialog-debug-toggle-auto-response-mode
-Toggle the @code{dialog-debug-auto-response-mode} minor-mode in the
+Toggle the @code{dialog-debug-auto-response-mode} minor mode in the
 current debug buffer.
 @end defun
 
@@ -1047,7 +1047,7 @@ which always succeeds:
 @findex dialog-debug-auto-command-mode
 When a game is running in the debug buffer, it is possible to
 automatically send additional commands every time that a new prompt
-for game input appears.  The minor-mode
+for game input appears.  The minor mode
 @code{dialog-debug-auto-command-mode} is enabled by default in debug
 buffers and is pre-configured to send the commands @samp{@@dynamic}
 and @samp{@@tree}.  The command and command output will not be
@@ -1105,7 +1105,7 @@ to enable or disable @code{dialog-debug-auto-command-mode} in the
 current debug buffer.
 
 @defun dialog-debug-toggle-auto-command-mode
-Toggle the @code{dialog-debug-auto-command-mode} minor-mode in the
+Toggle the @code{dialog-debug-auto-command-mode} minor mode in the
 current debug buffer.
 @end defun
 
