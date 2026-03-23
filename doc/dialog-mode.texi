@@ -1014,14 +1014,7 @@ to game output.  This is useful when using a pseudo-terminal because
 debug output is potentially paged based on the debug buffer's current
 window dimensions and the length of the output.
 @code{dialog-debug-auto-response-mode} will automatically dismiss any
-@samp{[more]} prompts which appear.  The command
-@code{dialog-debug-toggle-auto-response-mode} will enable or disable
-@code{dialog-debug-auto-response-mode} in the current debug buffer.
-
-@defun dialog-debug-toggle-auto-response-mode
-Toggle the @code{dialog-debug-auto-response-mode} minor mode in the
-current debug buffer.
-@end defun
+@samp{[more]} prompts which appear.
 
 
 @node Dismissing game prompts
@@ -1098,15 +1091,6 @@ Display the buffer which contains data derived from the
 @defun dialog-data-display-tree
 Display the buffer which contains data derived from the @samp{@@tree}
 command for the current debug buffer.
-@end defun
-
-The command @code{dialog-debug-toggle-auto-command-mode} can be used
-to enable or disable @code{dialog-debug-auto-command-mode} in the
-current debug buffer.
-
-@defun dialog-debug-toggle-auto-command-mode
-Toggle the @code{dialog-debug-auto-command-mode} minor mode in the
-current debug buffer.
 @end defun
 
 
@@ -1238,20 +1222,6 @@ A hook which is run after displaying a trace file reference.
 @defopt dialog-trace-pop-to-file-ref-hook
 A hook which is run after popping to a trace file reference.
 @end defopt
-
-The commands @code{dialog-debug-toggle-trace-mode} and
-@code{dialog-debug-toggle-trace-follow-mode} can be used to enable or
-disable either minor mode in the current debug buffer.
-
-@defun dialog-debug-toggle-trace-mode
-Toggle the @code{dialog-debug-toggle-trace-mode} minor mode in the
-current debug buffer.
-@end defun
-
-@defun dialog-debug-toggle-trace-follow-mode
-Toggle the @code{dialog-debug-toggle-trace-follow-mode} minor mode in
-the current debug buffer.
-@end defun
 
 
 @node Browsing the Dialog manual

@@ -993,16 +993,6 @@ value is by using directory local variables.")
   "Specifies the name of the Dialog debugger executable."
   :type 'string)
 
-(defmacro dialog-debug--toggle-minor-mode (mode)
-  "Toggle the minor mode function MODE in the current debug buffer."
-  `(if-let* ((buffer (dialog-debug-buffer)))
-       (with-current-buffer buffer
-         (message ,(concat (capitalize (symbol-name mode))
-                           " mode %s in buffer '%s'")
-                  (if (if ,mode (,mode -1) (,mode)) "enabled" "disabled")
-                  buffer))
-     (user-error "No debug buffer exists")))
-
 (defcustom dialog-debug-as-interp (not (eq system-type 'windows-nt))
   "Specifies whether the debug program runs as a command interpreter.
 
@@ -1260,11 +1250,6 @@ When a region is active, send the region, otherwise send the current line."
     (remove-hook 'comint-output-filter-functions
                  #'dialog-debug-output-responder t)))
 
-(defun dialog-debug-toggle-auto-response-mode ()
-  "Toggle `dialog-debug-auto-response-mode' in the current debug buffer."
-  (interactive)
-  (dialog-debug--toggle-minor-mode dialog-debug-auto-response-mode))
-
 (defun dialog-debug-output-responder (_string)
   "Respond to process output by sending additional input."
   (when-let* ((process (get-buffer-process (current-buffer))))
@@ -1291,6 +1276,18 @@ it would in traditional terminal."
   (setq dialog-debug-use-pty (not dialog-debug-use-pty))
   (message "Use of a pseudo-terminal for the next debug buffer is now %s"
            (if dialog-debug-use-pty "enabled" "disabled")))
+
+(defmacro dialog-debug--toggle-mode-function (mode)
+  "Return a function to toggle MODE in the current debug buffer."
+  `(lambda ()
+     (interactive)
+     (if-let* ((buffer (dialog-debug-buffer)))
+         (with-current-buffer buffer
+           (message ,(concat (capitalize (symbol-name mode))
+                             " mode %s in buffer '%s'")
+                    (if (if ,mode (,mode -1) (,mode)) "enabled" "disabled")
+                    buffer))
+       (user-error "No debug buffer exists"))))
 
 (defvar dialog-debug-mode-map
   (let ((map (make-sparse-keymap)))
@@ -1416,11 +1413,6 @@ it would in traditional terminal."
                 #'dialog-debug-auto-command-send 90 t)
     (remove-hook 'comint-preoutput-filter-functions
                  #'dialog-debug-auto-command-send t)))
-
-(defun dialog-debug-toggle-auto-command-mode ()
-  "Toggle `dialog-debug-auto-command-mode' in the current debug buffer."
-  (interactive)
-  (dialog-debug--toggle-minor-mode dialog-debug-auto-command-mode))
 
 ;;;;; Comint data collection and display.
 
@@ -2045,11 +2037,6 @@ a negative argument."
          (cursor-face-highlight-mode -1)
          (dialog-trace--unpropertize))))
 
-(defun dialog-debug-toggle-trace-mode ()
-  "Toggle `dialog-trace-mode' in the current debug buffer."
-  (interactive)
-  (dialog-debug--toggle-minor-mode dialog-trace-mode))
-
 (defcustom dialog-trace-follow-restore-window-configuration nil
   "Specifies how `dialog-trace-follow-mode' handles window configuration.
 
@@ -2079,11 +2066,6 @@ between lines."
                (current-window-configuration)))
         (dialog-trace-follow-restore-window-configuration
          (set-window-configuration dialog-trace-follow-window-configuration))))
-
-(defun dialog-debug-toggle-trace-follow-mode ()
-  "Toggle `dialog-trace-follow-mode' in the current debug buffer."
-  (interactive)
-  (dialog-debug--toggle-minor-mode dialog-trace-follow-mode))
 
 (defun dialog-trace-forward (&optional arg interactive)
   "Move forwards ARG trace output lines.
@@ -2302,25 +2284,29 @@ string elements in both lists have the same positions and are `equal'."
      :style toggle
      :selected dialog-debug-use-pty
      :help "Enable running the Dialog debug program using a pseudo-terminal"]
-    ["Enable automatic debug command sending" dialog-debug-toggle-auto-command-mode
+    ["Enable automatic debug command sending"
+     ,(dialog-debug--toggle-mode-function dialog-debug-auto-command-mode)
      :active (dialog-debug-buffer)
      :style toggle
      :selected (and-let* ((buffer (dialog-debug-buffer)))
                  (buffer-local-value 'dialog-debug-auto-command-mode buffer))
      :help "Enable automatically sending debug commands at the debug prompt"]
-    ["Enable automatic debug output responses" dialog-debug-toggle-auto-response-mode
+    ["Enable automatic debug output responses"
+     ,(dialog-debug--toggle-mode-function dialog-debug-auto-response-mode)
      :active (dialog-debug-buffer)
      :style toggle
      :selected (and-let* ((buffer (dialog-debug-buffer)))
                  (buffer-local-value 'dialog-debug-auto-response-mode buffer))
      :help "Enable automatically sending responses to debug output"]
-    ["Enable trace highlighting and keymaps" dialog-debug-toggle-trace-mode
+    ["Enable trace highlighting and keymaps"
+     ,(dialog-debug--toggle-mode-function dialog-trace-mode)
      :active (dialog-debug-buffer)
      :style toggle
      :selected (and-let* ((buffer (dialog-debug-buffer)))
                  (buffer-local-value 'dialog-trace-mode buffer))
      :help "Enable highlighting and add keymaps to trace output"]
-    ["Enable automatic display of trace source files" dialog-debug-toggle-trace-follow-mode
+    ["Enable automatic display of trace source files"
+     ,(dialog-debug--toggle-mode-function dialog-trace-follow-mode)
      :active (dialog-debug-buffer)
      :style toggle
      :selected (and-let* ((buffer (dialog-debug-buffer)))
