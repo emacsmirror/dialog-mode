@@ -884,6 +884,7 @@ buffer changes:
 @cindex the debug buffer @subentry debugging
 @cindex determining the current debug buffer @subentry when debugging
 
+@findex dialog-debug-mode
 @kindex C-c C-c
 @kindex C-c C-z
 The buffer which runs the debug process will use
@@ -1006,6 +1007,7 @@ changes to this variable to take effect.
 @end defopt
 
 @cindex dismissing debugger prompts @subentry when debugging
+@findex dialog-debug-auto-response-mode
 The minor-mode @code{dialog-debug-auto-response-mode} can be enabled
 in @code{dialog-debug-mode} buffers to switch on automatic responses
 to game output.  This is useful when using a pseudo-terminal because
@@ -1042,6 +1044,7 @@ which always succeeds:
 @cindex game state information
 @cindex viewing game state information @subentry when debugging
 
+@findex dialog-debug-auto-command-mode
 When a game is running in the debug buffer, it is possible to
 automatically send additional commands every time that a new prompt
 for game input appears.  The minor-mode
@@ -1071,6 +1074,7 @@ Functions added to this hook are called when the game prompt appears
 before any commands are automatically sent.
 @end defopt
 
+@findex dialog-data-mode
 @kindex C-c C-d d
 @kindex C-c C-d t
 If using the pre-configured hook values, two buffers containing game
@@ -1118,6 +1122,7 @@ includes enabling the minor modes directly in @code{dialog-debug-mode}
 buffers, where new trace output is generated in response to game
 actions and debug queries.
 
+@findex dialog-trace-mode
 The minor mode @code{dialog-trace-mode} is enabled in
 @code{dialog-debug-mode} buffers by default.  When enabled it
 propertizes the text of Dialog trace output in order to:
@@ -1187,6 +1192,7 @@ Move forwards to the end of the next region of trace output.
 Move backwards to the start of the previous region of trace output.
 @end defun
 
+@findex dialog-trace-follow-mode
 The minor mode @code{dialog-trace-follow-mode} enables functionality
 which displays source files when trace motions commands such as
 @code{dialog-trace-forward} and @code{dialog-trace-backward} are used,
