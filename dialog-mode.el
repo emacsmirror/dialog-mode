@@ -1804,12 +1804,13 @@ left to move."
      do (funcall line-edge-fn)))
   arg)
 
-(defun dialog-backward-paragraph (arg)
+(defun dialog-backward-paragraph (&optional arg)
   "Move backwards to the end of the current paragraph ARG times.
 
 Behavior is as described for `dialog-forward-paragraph' when called with
 a negative argument."
   (interactive "p")
+  (unless arg (setq arg 1))
   (dialog-forward-paragraph (- arg)))
 
 ;;;; Trace output
