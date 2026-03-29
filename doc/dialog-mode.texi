@@ -1151,6 +1151,7 @@ have key-bindings when point is anywhere on the trace line:
 @item @kbd{f} @tab @code{dialog-trace-follow-mode}
 @end multitable
 
+@vindex dialog-trace-display-buffer-action
 @defun dialog-trace-display-file-ref
 Switch to the buffer and move to the line number of the file which is
 referenced in the trace line at point.  The file will be opened if not
@@ -1159,6 +1160,7 @@ already open.  The customization variable
 buffer should be displayed.
 @end defun
 
+@vindex dialog-trace-pop-to-buffer-action
 @defun dialog-trace-pop-to-file-ref
 Display the buffer and move within the window to the line number of
 the file which is referenced in the trace line at point.  The
