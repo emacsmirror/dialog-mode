@@ -1970,6 +1970,7 @@ a negative argument."
              ;; removed haven't been modified by or originally belonged to
              ;; functionality from unrelated modes.
              '( cursor-face nil
+                dialog-trace-file nil
                 dialog-trace-line nil
                 font-lock-face nil
                 help-echo nil
