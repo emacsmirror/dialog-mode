@@ -2249,6 +2249,7 @@ string elements in both lists have the same positions and are `equal'."
     ["Enable the use of a pseudo-terminal" dialog-debug-toggle-use-pty
      :style toggle
      :selected dialog-debug-use-pty
+     :visible dialog-debug-as-interp
      :help "Enable running the Dialog debug program using a pseudo-terminal"]
     ["Enable automatic debug command sending"
      ,(dialog-debug--toggle-mode-function dialog-debug-auto-command-mode)
@@ -2256,6 +2257,7 @@ string elements in both lists have the same positions and are `equal'."
      :style toggle
      :selected (and-let* ((buffer (dialog-debug-buffer)))
                  (buffer-local-value 'dialog-debug-auto-command-mode buffer))
+     :visible dialog-debug-as-interp
      :help "Enable automatically sending debug commands at the debug prompt"]
     ["Enable automatic debug output responses"
      ,(dialog-debug--toggle-mode-function dialog-debug-auto-response-mode)
@@ -2263,6 +2265,7 @@ string elements in both lists have the same positions and are `equal'."
      :style toggle
      :selected (and-let* ((buffer (dialog-debug-buffer)))
                  (buffer-local-value 'dialog-debug-auto-response-mode buffer))
+     :visible dialog-debug-as-interp
      :help "Enable automatically sending responses to debug output"]
     ["Enable trace highlighting and keymaps"
      ,(dialog-debug--toggle-mode-function dialog-trace-mode)
@@ -2270,6 +2273,7 @@ string elements in both lists have the same positions and are `equal'."
      :style toggle
      :selected (and-let* ((buffer (dialog-debug-buffer)))
                  (buffer-local-value 'dialog-trace-mode buffer))
+     :visible dialog-debug-as-interp
      :help "Enable highlighting and add keymaps to trace output"]
     ["Enable automatic display of trace source files"
      ,(dialog-debug--toggle-mode-function dialog-trace-follow-mode)
@@ -2277,39 +2281,45 @@ string elements in both lists have the same positions and are `equal'."
      :style toggle
      :selected (and-let* ((buffer (dialog-debug-buffer)))
                  (buffer-local-value 'dialog-trace-follow-mode buffer))
+     :visible dialog-debug-as-interp
      :help "Enable automatic display of source files referenced in trace output"]
     ["Start the debug program" dialog-debug-run
      :active (not (dialog-debug-process))
      :help "Start the Dialog debug program"]
     ["Display debug buffer" dialog-debug-display-buffer
      :active (dialog-debug-buffer)
+     :visible dialog-debug-as-interp
      :help "Display the buffer for the Dialog debug program"]
     ["Display and switch to debug buffer"
      (lambda ()
        (interactive)
        (pop-to-buffer (dialog-debug-buffer)))
      :active (dialog-debug-buffer)
+     :visible dialog-debug-as-interp
      :help "Display and switch to the buffer for the Dialog debug program"]
     ["Display the current dynamic data state" dialog-data-display-dynamic
      :active (dialog-data-buffer "@dynamic")
+     :visible dialog-debug-as-interp
      :help "Display the buffer for the current dynamic data state"]
     ["Display the current object tree" dialog-data-display-tree
      :active (dialog-data-buffer "@tree")
+     :visible dialog-debug-as-interp
      :help "Display the buffer for the current object tree state"]
     "---"
     ["Set the default command to send" dialog-debug-set-default-command
      :help "Set the default command to send to the debug program"]
     ["Send default command" dialog-debug-send-command
-     :active (dialog-debug-process)
+     :active (or (not dialog-debug-as-interp) (dialog-debug-process))
      :help "Send the default command to the debug program"]
     ["Send current line as command" dialog-debug-send-command-from-line
-     :active (dialog-debug-process)
+     :active (or (not dialog-debug-as-interp) (dialog-debug-process))
      :help "Send the current line to the debug program"]
     ["Send region as commands" dialog-debug-send-command-from-region
-     :active (and (dialog-debug-process) (use-region-p))
+     :active (and (or (not dialog-debug-as-interp) (dialog-debug-process))
+                  (use-region-p))
      :help "Send the lines in the current region to the debug program"]
     ("Send command from presets"
-     :active (dialog-debug-process)
+     :active (or (not dialog-debug-as-interp) (dialog-debug-process))
      ,@(cl-loop for (command . description) in dialog-debug-send-command-presets
                 collect (vector
                          command
@@ -2323,7 +2333,7 @@ string elements in both lists have the same positions and are `equal'."
      (lambda ()
        (interactive)
        (dialog-debug-send-command 'prompt))
-     :active (dialog-debug-process)
+     :active (or (not dialog-debug-as-interp) (dialog-debug-process))
      :help "Send a command to the debug program"]
     "---"
     ["Browse the manual" dialog-browse-manual
