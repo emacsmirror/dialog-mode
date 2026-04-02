@@ -1089,6 +1089,23 @@ shown."
     ("@tree"       . "Show the current state of the object tree"))
   "Alist of commands to send and their descriptions.")
 
+(defun dialog--add-send-command-presets-to-menu (map)
+  "Add preset sending commands to the menu in keymap MAP."
+  (easy-menu-add-item
+   map nil
+   `("Send command from presets"
+     :active (or (not dialog-debug-as-interp) (dialog-debug-process))
+     ,@(cl-loop for (command . description) in dialog-debug-send-command-presets
+                collect (vector
+                         command
+                         (let ((command command))  ; Lexical binding.
+                           (lambda ()
+                             (interactive)
+                             (let ((dialog-debug-send-command-default command))
+                               (dialog-debug-send-command))))
+                         :help (or description (concat "Send " command)))))
+   "Send command"))
+
 (defun dialog--annotate-command (command)
   "Return the annotation for COMMAND."
   (and-let* ((item (assoc command dialog-debug-send-command-presets))
@@ -1241,18 +1258,6 @@ it would in traditional terminal."
   (message "Use of a pseudo-terminal for the next debug buffer is now %s"
            (if dialog-debug-use-pty "enabled" "disabled")))
 
-(defmacro dialog-debug--toggle-mode-function (mode)
-  "Return a function to toggle MODE in the current debug buffer."
-  `(lambda ()
-     (interactive)
-     (if-let* ((buffer (dialog-debug-buffer)))
-         (with-current-buffer buffer
-           (message ,(concat (capitalize (symbol-name mode))
-                             " mode %s in buffer '%s'")
-                    (if (if ,mode (,mode -1) (,mode)) "enabled" "disabled")
-                    buffer))
-       (user-error "No debug buffer exists"))))
-
 (defvar dialog-debug-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c C-c") #'dialog-debug-send-command)
@@ -1261,6 +1266,53 @@ it would in traditional terminal."
     (define-key map (kbd "C-c C-z") #'quit-window)
     (set-keymap-parent map comint-mode-map)
     map))
+
+(easy-menu-define dialog-debug-mode-menu dialog-debug-mode-map
+  "Menu for Dialog Debug Mode."
+  '("Dialog"
+    ["Enable automatic debug command sending" dialog-debug-auto-command-mode
+     :style toggle
+     :selected dialog-debug-auto-command-mode
+     :help "Enable automatically sending debug commands at the debug prompt"]
+    ["Enable automatic debug output responses" dialog-debug-auto-response-mode
+     :style toggle
+     :selected dialog-debug-auto-response-mode
+     :help "Enable automatically sending responses to debug output"]
+    ["Enable trace highlighting and keymaps" dialog-trace-mode
+     :style toggle
+     :selected dialog-trace-mode
+     :help "Enable highlighting and add keymaps to trace output"]
+    ["Enable automatic display of trace source files" dialog-trace-follow-mode
+     :style toggle
+     :selected dialog-trace-follow-mode
+     :help "Enable automatic display of source files referenced in trace output"]
+    "---"
+    ["Start the debug program" dialog-debug-run
+     :active (not (dialog-debug-process))
+     :help "Start the Dialog debug program"]
+    ["Display the current dynamic data state" dialog-data-display-dynamic
+     :active (dialog-data-buffer "@dynamic")
+     :visible dialog-debug-as-interp
+     :help "Display the buffer for the current dynamic data state"]
+    ["Display the current object tree" dialog-data-display-tree
+     :active (dialog-data-buffer "@tree")
+     :visible dialog-debug-as-interp
+     :help "Display the buffer for the current object tree state"]
+    "---"
+    ["Set the default command to send" dialog-debug-set-default-command
+     :help "Set the default command to send to the debug program"]
+    ["Send default command" dialog-debug-send-command
+     :active (or (not dialog-debug-as-interp) (dialog-debug-process))
+     :help "Send the default command to the debug program"]
+    ["Send command"
+     (lambda ()
+       (interactive)
+       (dialog-debug-send-command 'prompt))
+     :active (or (not dialog-debug-as-interp) (dialog-debug-process))
+     :help "Send a command to the debug program"]
+    "---"
+    ["Browse the manual" dialog-browse-manual
+     :help "Browse the Dialog manual in the default browser"]))
 
 (define-derived-mode dialog-debug-mode comint-mode "DGDebug"
   "Major mode for running the Dialog interactive debugger.
@@ -1272,6 +1324,7 @@ it would in traditional terminal."
   (setq-local comint-prompt-regexp (rx line-start "> "))
   (setq-local process-connection-type dialog-debug-use-pty)
   (setq-local scroll-conservatively most-positive-fixnum)
+  (dialog--add-send-command-presets-to-menu dialog-debug-mode-menu)
   (add-hook 'dialog-debug-mode-hook #'dialog-debug-auto-command-mode)
   (add-hook 'dialog-debug-mode-hook #'dialog-trace-mode))
 
@@ -2226,7 +2279,7 @@ string elements in both lists have the same positions and are `equal'."
 
 (easy-menu-define dialog-mode-menu dialog-mode-map
   "Menu for Dialog Mode."
-  `("Dialog"
+  '("Dialog"
     ["Start of rule" beginning-of-defun
      :help "Go to the start of the rule definition around point"]
     ["End of rule" end-of-defun
@@ -2251,38 +2304,6 @@ string elements in both lists have the same positions and are `equal'."
      :selected dialog-debug-use-pty
      :visible dialog-debug-as-interp
      :help "Enable running the Dialog debug program using a pseudo-terminal"]
-    ["Enable automatic debug command sending"
-     ,(dialog-debug--toggle-mode-function dialog-debug-auto-command-mode)
-     :active (dialog-debug-buffer)
-     :style toggle
-     :selected (and-let* ((buffer (dialog-debug-buffer)))
-                 (buffer-local-value 'dialog-debug-auto-command-mode buffer))
-     :visible dialog-debug-as-interp
-     :help "Enable automatically sending debug commands at the debug prompt"]
-    ["Enable automatic debug output responses"
-     ,(dialog-debug--toggle-mode-function dialog-debug-auto-response-mode)
-     :active (dialog-debug-buffer)
-     :style toggle
-     :selected (and-let* ((buffer (dialog-debug-buffer)))
-                 (buffer-local-value 'dialog-debug-auto-response-mode buffer))
-     :visible dialog-debug-as-interp
-     :help "Enable automatically sending responses to debug output"]
-    ["Enable trace highlighting and keymaps"
-     ,(dialog-debug--toggle-mode-function dialog-trace-mode)
-     :active (dialog-debug-buffer)
-     :style toggle
-     :selected (and-let* ((buffer (dialog-debug-buffer)))
-                 (buffer-local-value 'dialog-trace-mode buffer))
-     :visible dialog-debug-as-interp
-     :help "Enable highlighting and add keymaps to trace output"]
-    ["Enable automatic display of trace source files"
-     ,(dialog-debug--toggle-mode-function dialog-trace-follow-mode)
-     :active (dialog-debug-buffer)
-     :style toggle
-     :selected (and-let* ((buffer (dialog-debug-buffer)))
-                 (buffer-local-value 'dialog-trace-follow-mode buffer))
-     :visible dialog-debug-as-interp
-     :help "Enable automatic display of source files referenced in trace output"]
     ["Start the debug program" dialog-debug-run
      :active (not (dialog-debug-process))
      :help "Start the Dialog debug program"]
@@ -2318,17 +2339,6 @@ string elements in both lists have the same positions and are `equal'."
      :active (and (or (not dialog-debug-as-interp) (dialog-debug-process))
                   (use-region-p))
      :help "Send the lines in the current region to the debug program"]
-    ("Send command from presets"
-     :active (or (not dialog-debug-as-interp) (dialog-debug-process))
-     ,@(cl-loop for (command . description) in dialog-debug-send-command-presets
-                collect (vector
-                         command
-                         (let ((command command))  ; Lexical binding.
-                           (lambda ()
-                             (interactive)
-                             (let ((dialog-debug-send-command-default command))
-                               (dialog-debug-send-command))))
-                         :help (or description (concat "Send " command)))))
     ["Send command"
      (lambda ()
        (interactive)
@@ -2400,6 +2410,7 @@ string elements in both lists have the same positions and are `equal'."
   (setq-local outline-level #'dialog-outline-level)
   (setq-local outline-regexp (dialog-rx outline))
   (setq-local syntax-propertize-function dialog-syntax-propertize-function)
+  (dialog--add-send-command-presets-to-menu dialog-mode-menu)
   (add-hook 'electric-indent-functions #'dialog-electric-indent nil t)
   (add-hook 'flymake-diagnostic-functions #'dialog-flymake nil t)
   ;; Flymake is using source files rather than buffers.
