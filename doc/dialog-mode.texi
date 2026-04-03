@@ -780,7 +780,7 @@ the debug program as if they had been manually typed at a terminal.
 The command @code{dialog-debug-send-command} can be used to send a
 debug command, either the default command as defined by the
 customization variable @code{dialog-debug-send-command-default}, or by
-prompting for command to send if called with a prefix argument.
+prompting for a command to send if called with a prefix argument.
 
 @defun dialog-debug-send-command
 With a prefix argument, prompt for text to send as a command to the
