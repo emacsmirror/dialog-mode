@@ -1150,16 +1150,22 @@ prompt for the command to send instead of using the default."
   (interactive "P")
   (let ((dialog-debug-send-command-input
          (if prompt
-             (dialog--completing-read
-              "Command: "
-              (lambda (string pred action)
-                (if (eq action 'metadata)
-                    (list 'metadata
-                          (cons 'annotation-function #'dialog--annotate-command)
-                          (cons 'group-function #'dialog--group-command))
-                  (complete-with-action
-                   action dialog-debug-send-command-presets string pred)))
-              nil nil nil 'dialog-debug-send-command-history)
+             (let ((source-buffer (current-buffer)))
+               (dialog--completing-read
+                "Command: "
+                (lambda (string pred action)
+                  (if (eq action 'metadata)
+                      (list
+                       'metadata
+                       (cons 'annotation-function #'dialog--annotate-command)
+                       (cons 'group-function #'dialog--group-command))
+                    (complete-with-action
+                     action
+                     (buffer-local-value
+                      'dialog-debug-send-command-presets source-buffer)
+                     string
+                     pred)))
+                nil nil nil 'dialog-debug-send-command-history))
            dialog-debug-send-command-default)))
     (when (and prompt dialog-debug-send-command-prompt-sets-default)
       (setq dialog-debug-send-command-default dialog-debug-send-command-input))
@@ -1228,15 +1234,20 @@ When a region is active, send the region, otherwise send the current line."
   "Set the default command to be sent to the debug process."
   (interactive)
   (setq dialog-debug-send-command-default
-        (dialog--completing-read
-         "Default command: "
-         (lambda (string pred action)
-           (if (eq action 'metadata)
-               (list 'metadata
-                     (cons 'annotation-function #'dialog--annotate-command)
-                     (cons 'group-function #'dialog--group-command))
-             (complete-with-action
-              action dialog-debug-send-command-presets string pred))))))
+        (let ((source-buffer (current-buffer)))
+          (dialog--completing-read
+           "Default command: "
+           (lambda (string pred action)
+             (if (eq action 'metadata)
+                 (list 'metadata
+                       (cons 'annotation-function #'dialog--annotate-command)
+                       (cons 'group-function #'dialog--group-command))
+               (complete-with-action
+                action
+                (buffer-local-value
+                 'dialog-debug-send-command-presets source-buffer)
+                string
+                pred)))))))
 
 (define-minor-mode dialog-debug-auto-response-mode
   "Enable automatic responses from Comint output filters."
