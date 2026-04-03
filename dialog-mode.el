@@ -1073,7 +1073,17 @@ shown."
 (defvar dialog-debug-send-command-history nil
   "History of minibuffer input for `dialog-debug-send-command'.")
 
-(defvar dialog-debug-send-command-presets
+(defun dialog-debug-send-command-presets-valid-p (alist)
+  "Check that ALIST is an alist of strings."
+  (and (listp alist)
+       (cl-loop for preset in alist
+                unless (and (consp preset)
+                            (stringp (car preset))
+                            (stringp (cdr preset)))
+                return nil
+                finally return t)))
+
+(defcustom dialog-debug-send-command-presets
   '(("(restart)"   . "Restart the program")
     ("(trace off)" . "Disable query tracing")
     ("(trace on)"  . "Enable query tracing")
@@ -1087,7 +1097,14 @@ shown."
     ("@restore"    . "Restart and read game input from a file")
     ("@save"       . "Save accumulated game input to a file")
     ("@tree"       . "Show the current state of the object tree"))
-  "Alist of commands to send and their descriptions.")
+  "Alist of commands to send and their descriptions.
+
+These commands are suggested during command completion and are also made
+available to send using menus."
+  :type '(repeat
+	  (cons (string :tag "Command")
+		(string :tag "Description")))
+  :safe #'dialog-debug-send-command-presets-valid-p)
 
 (defun dialog--add-send-command-presets-to-menu (map)
   "Add preset sending commands to the menu in keymap MAP."

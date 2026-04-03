@@ -811,6 +811,17 @@ Prompt for a command which will become the new default command by
 setting the value of @code{dialog-debug-send-command-default}.
 @end defun
 
+The list of preset commands and their descriptions may be edited or
+entirely replaced by changing the value of the customization variable
+@code{dialog-debug-send-command-presets}.
+
+@defopt dialog-debug-send-command-presets
+An alist of commands which should be valid to send to the debug
+program and their descriptions.  Commands present in this list will be
+suggested during command completion and are also made available to
+send using menus.
+@end defopt
+
 @kindex C-c C-e
 It is also possible to send debug commands represented by lines of
 text in Dialog Mode buffers, using the commands
