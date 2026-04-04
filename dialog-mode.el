@@ -1352,9 +1352,10 @@ it would in traditional terminal."
   (setq-local process-connection-type dialog-debug-use-pty)
   (setq-local scroll-conservatively most-positive-fixnum)
   (dialog--add-send-command-presets-to-menu dialog-debug-mode-menu)
-  (add-hook 'dialog-debug-mode-hook #'dialog-debug-auto-command-mode)
-  (add-hook 'dialog-debug-mode-hook #'dialog-trace-mode)
   (hack-dir-local-variables-non-file-buffer))
+
+(add-hook 'dialog-debug-mode-hook #'dialog-debug-auto-command-mode)
+(add-hook 'dialog-debug-mode-hook #'dialog-trace-mode)
 
 ;;;;; Comint auto-commands
 
@@ -1556,8 +1557,9 @@ it would in traditional terminal."
   (setq-local outline-minor-mode-cycle-filter nil)
   (setq-local outline-minor-mode-highlight 'override)
   (setq-local outline-minor-mode-use-buttons t)
-  (setq-local outline-regexp (rx line-start (char (?A . ?Z))))
-  (add-hook 'dialog-data-mode-hook #'outline-minor-mode))
+  (setq-local outline-regexp (rx line-start (char (?A . ?Z)))))
+
+(add-hook 'dialog-data-mode-hook #'outline-minor-mode)
 
 ;;;; Documentation look-up
 
