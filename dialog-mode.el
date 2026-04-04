@@ -1346,7 +1346,6 @@ it would in traditional terminal."
   "Major mode for running the Dialog interactive debugger.
 
 \\<dialog-debug-mode-map>"
-  (hack-dir-local-variables-non-file-buffer)
   (setq comint-process-echoes t)
   (setq-local comint-prompt-read-only t)
   (setq-local comint-prompt-regexp (rx line-start "> "))
@@ -1354,7 +1353,8 @@ it would in traditional terminal."
   (setq-local scroll-conservatively most-positive-fixnum)
   (dialog--add-send-command-presets-to-menu dialog-debug-mode-menu)
   (add-hook 'dialog-debug-mode-hook #'dialog-debug-auto-command-mode)
-  (add-hook 'dialog-debug-mode-hook #'dialog-trace-mode))
+  (add-hook 'dialog-debug-mode-hook #'dialog-trace-mode)
+  (hack-dir-local-variables-non-file-buffer))
 
 ;;;;; Comint auto-commands
 
