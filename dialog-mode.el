@@ -1106,10 +1106,13 @@ available to send using menus."
 		(string :tag "Description")))
   :safe #'dialog-debug-send-command-presets-valid-p)
 
-(defun dialog--add-send-command-presets-to-menu (map)
-  "Add preset sending commands to the menu in keymap MAP."
+(defun dialog--add-to-menu ()
+  "Add additional commands to the \"Dialog\" menu.
+
+This should only be called after local variables have been loaded."
   (easy-menu-add-item
-   map nil
+   (lookup-key (current-local-map) [menu-bar dialog])
+   nil
    `("Send command from presets"
      :active (or (not dialog-debug-as-interp) (dialog-debug-process))
      ,@(cl-loop for (command . description) in dialog-debug-send-command-presets
@@ -1351,8 +1354,9 @@ it would in traditional terminal."
   (setq-local comint-prompt-regexp (rx line-start "> "))
   (setq-local process-connection-type dialog-debug-use-pty)
   (setq-local scroll-conservatively most-positive-fixnum)
-  (dialog--add-send-command-presets-to-menu dialog-debug-mode-menu)
-  (hack-dir-local-variables-non-file-buffer))
+  (hack-dir-local-variables-non-file-buffer)
+  ;; After local variables have loaded.
+  (dialog--add-to-menu))
 
 (add-hook 'dialog-debug-mode-hook #'dialog-debug-auto-command-mode)
 (add-hook 'dialog-debug-mode-hook #'dialog-trace-mode)
@@ -2440,14 +2444,14 @@ string elements in both lists have the same positions and are `equal'."
   (setq-local outline-level #'dialog-outline-level)
   (setq-local outline-regexp (dialog-rx outline))
   (setq-local syntax-propertize-function dialog-syntax-propertize-function)
-  (dialog--add-send-command-presets-to-menu dialog-mode-menu)
   (add-hook 'electric-indent-functions #'dialog-electric-indent nil t)
   (add-hook 'flymake-diagnostic-functions #'dialog-flymake nil t)
   ;; Flymake is using source files rather than buffers.
   (setq-local flymake-no-changes-timeout nil)
   (add-hook 'xref-backend-functions #'dialog-xref--backend nil t)
   (add-to-list 'font-lock-extend-region-functions
-               #'dialog--font-lock-extend-region-syntax-form))
+               #'dialog--font-lock-extend-region-syntax-form)
+  (add-hook 'hack-local-variables-hook #'dialog--add-to-menu nil t))
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.dg\\'" . dialog-mode))
