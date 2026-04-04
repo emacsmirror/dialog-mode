@@ -1139,10 +1139,12 @@ When TRANSFORM is non-nil return the command, otherwise return the
 command type."
   (cond (transform
          command)
+        ((string-prefix-p "(" command)
+         "Predicate")
         ((string-prefix-p "@" command)
          "Debug command")
         (t
-         "Predicate")))
+         "Input")))
 
 (defun dialog-debug-send-command (&optional prompt)
   "Send a command to the debug program.
