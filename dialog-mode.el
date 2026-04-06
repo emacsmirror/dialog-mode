@@ -2143,30 +2143,11 @@ INTERACTIVE calls are handled."
 
 (defun dialog-xref--get-cache ()
   "Return the cache value from each buffer."
-  (cl-loop initially (dialog-xref--update-identifier-cache-maybe)
-           for game-file in dialog-game-files
-           for buffer = (set-buffer (get-file-buffer game-file))
-           collect (cons buffer (cdr dialog-xref--identifier-cache))))
-
-(defun dialog-xref--match-string-syntax (syntax1 syntax2)
-  "Match string elements in syntax lists SYNTAX1 and SYNTAX2.
-
-Return a non-nil value when both lists are the same length and when
-string elements in both lists have the same positions and are `equal'."
-  (cl-do
-      ((s1 syntax1 (cdr s1))
-       (s2 syntax2 (cdr s2)))
-      ((or (null s1) (null s2))
-       (and (null s1) (null s2)))
-    (when (or (stringp (car s1)) (stringp (car s2)))
-      (unless (equal (car s1) (car s2))
-        (cl-return)))))
-
-(defun dialog-xref--update-identifier-cache-maybe ()
-  "Update all identifier caches across all game-file buffers."
   (cl-loop
+   with project-directory = (dialog--project-directory)
    for game-file in dialog-game-files
-   do (set-buffer (find-file-noselect game-file 'no-warnings))
+   for expanded-file = (expand-file-name game-file project-directory)
+   for buffer = (set-buffer (find-file-noselect expanded-file 'no-warnings))
    when (derived-mode-p 'dialog-mode)
    unless (eq (buffer-modified-tick) (car dialog-xref--identifier-cache))
    do (setq
@@ -2190,7 +2171,22 @@ string elements in both lists have the same positions and are `equal'."
                                   (dialog--normalize-string
                                    (buffer-substring-no-properties start end))))
                             (goto-char end)
-                            (cons syntax-string block)))))))))
+                            (cons syntax-string block)))))))
+   collect (cons buffer (cdr dialog-xref--identifier-cache))))
+
+(defun dialog-xref--match-string-syntax (syntax1 syntax2)
+  "Match string elements in syntax lists SYNTAX1 and SYNTAX2.
+
+Return a non-nil value when both lists are the same length and when
+string elements in both lists have the same positions and are `equal'."
+  (cl-do
+      ((s1 syntax1 (cdr s1))
+       (s2 syntax2 (cdr s2)))
+      ((or (null s1) (null s2))
+       (and (null s1) (null s2)))
+    (when (or (stringp (car s1)) (stringp (car s2)))
+      (unless (equal (car s1) (car s2))
+        (cl-return)))))
 
 (cl-defmethod xref-backend-apropos ((_backend (eql dialog)) pattern)
   "Find all references matching PATTERN."
