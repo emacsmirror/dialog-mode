@@ -1132,7 +1132,8 @@ the mouse cursor.  Activating the button will open the given file,
 switch to its buffer, and move point to the relevant line.
 @item
 Configure the entire line of trace output to be highlighted when point
-is anywhere inside the trace output.
+is anywhere inside the trace output and
+@code{cursor-face-highlight-mode} is enabled.
 @item
 Assign the keymap @code{dialog-trace-map} which will be active when
 point is anywhere on the trace line.

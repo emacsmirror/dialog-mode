@@ -2065,13 +2065,11 @@ a negative argument."
                                line-end)
                              'no-group))
          (jit-lock-register #'dialog-trace--propertize)
-         (cursor-face-highlight-mode)
          ;; Run now on the entire buffer, otherwise text-property searches are
          ;; limited to the visible portion of the buffer.
          (jit-lock-fontify-now))
         (t
          (jit-lock-unregister #'dialog-trace--propertize)
-         (cursor-face-highlight-mode -1)
          (dialog-trace--unpropertize))))
 
 (defcustom dialog-trace-follow-restore-window-configuration nil
