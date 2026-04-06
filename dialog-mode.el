@@ -1254,24 +1254,6 @@ When a region is active, send the region, otherwise send the current line."
                 string
                 pred)))))))
 
-(define-minor-mode dialog-debug-auto-response-mode
-  "Enable automatic responses from Comint output filters."
-  :lighter " AutoResponse"
-  :interactive (dialog-debug-mode)
-  (if dialog-debug-auto-response-mode
-      (add-hook 'comint-output-filter-functions
-                #'dialog-debug-output-responder 90 t)
-    (remove-hook 'comint-output-filter-functions
-                 #'dialog-debug-output-responder t)))
-
-(defun dialog-debug-output-responder (_string)
-  "Respond to process output by sending additional input."
-  (when-let* ((process (get-buffer-process (current-buffer))))
-    (save-excursion
-      (goto-char (point-max))
-      (pcase (buffer-substring-no-properties (line-beginning-position) (point))
-        ("[more]" (comint-send-string process "\n"))))))
-
 (defcustom dialog-debug-use-pty t
   "Specifies whether the debug process uses a pseudo-terminal.
 
@@ -1465,6 +1447,24 @@ it would in traditional terminal."
                 #'dialog-debug-auto-command-send 90 t)
     (remove-hook 'comint-preoutput-filter-functions
                  #'dialog-debug-auto-command-send t)))
+
+(defun dialog-debug-auto-output-responder (_string)
+  "Respond to process output by sending additional input."
+  (when-let* ((process (get-buffer-process (current-buffer))))
+    (save-excursion
+      (goto-char (point-max))
+      (pcase (buffer-substring-no-properties (line-beginning-position) (point))
+        ("[more]" (comint-send-string process "\n"))))))
+
+(define-minor-mode dialog-debug-auto-response-mode
+  "Enable automatic responses from Comint output filters."
+  :lighter " AutoResponse"
+  :interactive (dialog-debug-mode)
+  (if dialog-debug-auto-response-mode
+      (add-hook 'comint-output-filter-functions
+                #'dialog-debug-auto-output-responder 90 t)
+    (remove-hook 'comint-output-filter-functions
+                 #'dialog-debug-auto-output-responder t)))
 
 ;;;;; Comint data collection and display.
 
