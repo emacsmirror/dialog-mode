@@ -274,17 +274,6 @@ names for dictionary words, objects, and variables.")
 
 ;;;; Utility
 
-(defun dialog--completing-read (&rest args)
-  "Completing-read with Dialog specific minibuffer keymap.
-
-Call `completing-read' with ARGS using a minibuffer keymap that doesn't
-bind special completion commands to the space and \"?\" keys."
-  (let ((minibuffer-local-completion-map
-         (copy-keymap minibuffer-local-completion-map)))
-    (define-key minibuffer-local-completion-map " " #'self-insert-command)
-    (define-key minibuffer-local-completion-map "?" #'self-insert-command)
-    (apply #'completing-read args)))
-
 (defun dialog--derived-buffer-name (buffer-name suffix &optional private)
   "Return the name BUFFER-NAME extended with SUFFIX.
 
@@ -1106,46 +1095,6 @@ available to send using menus."
 		(string :tag "Description")))
   :safe #'dialog-debug-send-command-presets-valid-p)
 
-(defun dialog--add-to-menu ()
-  "Add additional commands to the \"Dialog\" menu.
-
-This should only be called after local variables have been loaded."
-  (easy-menu-add-item
-   (lookup-key (current-local-map) [menu-bar dialog])
-   nil
-   `("Send command from presets"
-     :active (or (not dialog-debug-as-interp) (dialog-debug-process))
-     ,@(cl-loop for (command . description) in dialog-debug-send-command-presets
-                collect (vector
-                         command
-                         (let ((command command))  ; Lexical binding.
-                           (lambda ()
-                             (interactive)
-                             (let ((dialog-debug-send-command-default command))
-                               (dialog-debug-send-command))))
-                         :help (or description (concat "Send " command)))))
-   "Send command"))
-
-(defun dialog--annotate-command (command)
-  "Return the annotation for COMMAND."
-  (and-let* ((item (assoc command dialog-debug-send-command-presets))
-             (description (cdr item)))
-    (concat " " description)))
-
-(defun dialog--group-command (command transform)
-  "Group COMMAND by its command type.
-
-When TRANSFORM is non-nil return the command, otherwise return the
-command type."
-  (cond (transform
-         command)
-        ((string-prefix-p "(" command)
-         "Predicate")
-        ((string-prefix-p "@" command)
-         "Debug command")
-        (t
-         "Input")))
-
 (defun dialog-debug-send-command (&optional prompt)
   "Send a command to the debug program.
 
@@ -1566,6 +1515,39 @@ it would in traditional terminal."
   (setq-local outline-regexp (rx line-start (char (?A . ?Z)))))
 
 (add-hook 'dialog-data-mode-hook #'outline-minor-mode)
+
+;;;; Completion
+
+(defun dialog--annotate-command (command)
+  "Return the annotation for COMMAND."
+  (and-let* ((item (assoc command dialog-debug-send-command-presets))
+             (description (cdr item)))
+    (concat " " description)))
+
+(defun dialog--completing-read (&rest args)
+  "Completing-read with Dialog specific minibuffer keymap.
+
+Call `completing-read' with ARGS using a minibuffer keymap that doesn't
+bind special completion commands to the space and \"?\" keys."
+  (let ((minibuffer-local-completion-map
+         (copy-keymap minibuffer-local-completion-map)))
+    (define-key minibuffer-local-completion-map " " #'self-insert-command)
+    (define-key minibuffer-local-completion-map "?" #'self-insert-command)
+    (apply #'completing-read args)))
+
+(defun dialog--group-command (command transform)
+  "Group COMMAND by its command type.
+
+When TRANSFORM is non-nil return the command, otherwise return the
+command type."
+  (cond (transform
+         command)
+        ((string-prefix-p "(" command)
+         "Predicate")
+        ((string-prefix-p "@" command)
+         "Debug command")
+        (t
+         "Input")))
 
 ;;;; Documentation look-up
 
@@ -2312,6 +2294,26 @@ string elements in both lists have the same positions and are `equal'."
     map))
 
 ;;;; Menu
+
+(defun dialog--add-to-menu ()
+  "Add additional commands to the \"Dialog\" menu.
+
+This should only be called after local variables have been loaded."
+  (easy-menu-add-item
+   (lookup-key (current-local-map) [menu-bar dialog])
+   nil
+   `("Send command from presets"
+     :active (or (not dialog-debug-as-interp) (dialog-debug-process))
+     ,@(cl-loop for (command . description) in dialog-debug-send-command-presets
+                collect (vector
+                         command
+                         (let ((command command))  ; Lexical binding.
+                           (lambda ()
+                             (interactive)
+                             (let ((dialog-debug-send-command-default command))
+                               (dialog-debug-send-command))))
+                         :help (or description (concat "Send " command)))))
+   "Send command"))
 
 (easy-menu-define dialog-mode-menu dialog-mode-map
   "Menu for Dialog Mode."
