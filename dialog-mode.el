@@ -984,7 +984,10 @@ used buffer will be displayed if it exists."
                                                dialog-debug-buffer-name)
                            (dialog-debug-mode)
                            (current-buffer))))))
-    (unless (and buffer (comint-check-proc buffer))
+    (if (and buffer (comint-check-proc buffer))
+        ;; Display the existing buffer which has a process.
+        (pop-to-buffer buffer)
+      ;; Start a new process.
       (let* ((program (or (executable-find dialog-debug-program)
                           (user-error "Cannot find debug program '%s'"
                                       dialog-debug-program)))
@@ -1010,17 +1013,19 @@ used buffer will be displayed if it exists."
                                         "Game files: "
                                         #'completion-file-name-table))))))
         (cond (dialog-debug-as-interp
-               (with-current-buffer buffer
-                 (setq default-directory game-directory))
+               (setf (buffer-local-value 'default-directory buffer)
+                     game-directory)
+               ;; Display the buffer before starting the process so that any
+               ;; configuration for the terminal size will have access to the
+               ;; new window size.
+               (pop-to-buffer buffer)
                (apply #'make-comint-in-buffer
                       program-basename buffer program nil game-files))
               (t
                (message "Starting debug program")
                (let ((default-directory game-directory))
                  (apply #'start-process
-                        program-basename buffer program game-files))))))
-    (when buffer
-      (pop-to-buffer buffer))))
+                        program-basename buffer program game-files))))))))
 
 (defcustom dialog-debug-send-command-default "@replay"
   "Specifies the default command sent to the debug process.
