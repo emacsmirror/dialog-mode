@@ -1019,8 +1019,20 @@ used buffer will be displayed if it exists."
                ;; configuration for the terminal size will have access to the
                ;; new window size.
                (pop-to-buffer buffer)
-               (apply #'make-comint-in-buffer
-                      program-basename buffer program nil game-files))
+               ;; Explicitly set the value of the environment variable COLUMNS
+               ;; to the current window width for the process environment.  This
+               ;; is a fallback value for when the debug process isn't able to
+               ;; query the terminal width or the size is determined to be
+               ;; invalid.  Not being able to query the width is likely to
+               ;; happen on Windows.  Receiving an invalid value is likely to
+               ;; happen for the initial debugger output because the process
+               ;; window size is unlikely to have been set in time.  See
+               ;; https://github.com/Dialog-IF/dialog/issues/236 for details.
+               (let ((process-environment (cons
+                                           (format "COLUMNS=%d" (window-width))
+                                           process-environment)))
+                 (apply #'make-comint-in-buffer
+                        program-basename buffer program nil game-files)))
               (t
                (message "Starting debug program")
                (let ((default-directory game-directory))
