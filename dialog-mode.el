@@ -946,7 +946,7 @@ value is by using directory local variables.")
   "Specifies the name of the Dialog debugger executable."
   :type 'string)
 
-(defcustom dialog-debug-as-interp (not (eq system-type 'windows-nt))
+(defcustom dialog-debug-as-interp t
   "Specifies whether the debug program runs as a command interpreter.
 
 A non-nil value will start the debug program using `comint' which

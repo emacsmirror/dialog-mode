@@ -926,9 +926,9 @@ be created in its place.
 @cindex disabling the command interpreter @subentry when debugging
 
 To run the debug program directly instead of as a command interpreter,
-set the value @code{dialog-debug-as-interp} to @code{nil}.  This also
-defaults command sending to store commands in the clipboard instead of
-trying to locate a debug process.
+set the value @code{dialog-debug-as-interp} to @code{nil}.  This
+reduces the functionality of the command @code{dialog-debug-run} to a
+convenient way to launch an external program.
 
 @defopt dialog-debug-as-interp
 Specifies whether the debug program runs as a command interpreter.  A
@@ -942,14 +942,16 @@ application.
 
 @cindex Windows support @subentry for debugging
 @cindex AutoHotkey @subentry for debugging
-The value of @code{dialog-debug-as-interp} will default to nil when
-using Microsoft Windows because the Windows build of the debug program
-can currently only run in a graphical window and is unable to receive
-input outside of that interface.  That said, the function used to send
-a command is configurable, stored in the customization variable
-@code{dialog-debug-send-command-function}, and so it is possible to
-provide alternative means of getting a debug command into the debug
-program.
+Dialog provides two debug programs for use on Microsoft Windows;
+@command{dgdebug} is the Windows build of the debugger designed for
+use in a terminal, while @command{dgdebug_gui} is an alternative build
+which runs in a graphical window.  If using the graphical debugger,
+the value of @code{dialog-debug-as-interp} should be set to nil.
+Switching to the graphical debugger means that there is no direct
+method for Emacs to send debug commands to the debugger.  It is still
+possible to send commands indirectly by configuring the value of the
+customization variable @code{dialog-debug-send-command-function} to a
+suitable function.
 
 @defopt dialog-debug-send-command-function
 Specifies the function which will be used to send a debug command to
@@ -959,8 +961,9 @@ to be sent is stored in the variable
 @end defopt
 
 As an example of custom configuration, the following example shows how
-to send commands to the Windows version of the Dialog debugger using
-AutoHotkey (available at @url{https://www.autohotkey.com/}):
+to switch to the graphical version of the Windows debug program and
+how to send commands to it using AutoHotkey (available at
+@url{https://www.autohotkey.com/}):
 
 @example lisp
 (defconst dialog-debug-send-ahk-script
@@ -990,6 +993,8 @@ Catch @{
                                          "autohotkey" nil nil nil "*")))
       (message "Failed to send command"))))
 
+(setq dialog-debug-program "dgdebug_gui")
+(setq dialog-debug-as-interp nil)
 (setq dialog-debug-send-command-function
       #'dialog-debug-send-command-with-ahk)
 @end example
