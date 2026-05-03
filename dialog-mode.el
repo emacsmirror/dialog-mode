@@ -2174,21 +2174,26 @@ INTERACTIVE calls are handled."
                (save-restriction
                  (widen)
                  (goto-char (point-min))
-                 (cl-loop
-                  while (re-search-forward (dialog-rx unescaped ?\() nil t)
-                  for ppss = (syntax-ppss)
-                  unless (> (dialog--paren-depth ppss) 1)
-                  if (dialog--in-comment-p ppss)
-                  do (end-of-line)
-                  else
-                  collect (let* ((block (dialog--parse-block))
-                                 (start (dialog-statement-position block))
-                                 (end (1+ (dialog--list-end start)))
-                                 (syntax-string
-                                  (dialog--normalize-string
-                                   (buffer-substring-no-properties start end))))
-                            (goto-char end)
-                            (cons syntax-string block)))))))
+                 (let (cache)
+                   (while (re-search-forward (dialog-rx unescaped ?\() nil t)
+                     (let ((ppss (syntax-ppss)))
+                       (cond ((> (dialog--paren-depth ppss) 1))
+                             ((dialog--in-comment-p ppss)
+                              (end-of-line))
+                             (t
+                              (let* ((block (dialog--parse-block))
+                                     (start (dialog-statement-position block))
+                                     (end (dialog--list-end start)))
+                                (when end  ; Only parse a closed syntax form.
+                                  (cl-incf end)
+                                  (goto-char end)
+                                  (push (cons
+                                         (dialog--normalize-string
+                                          (buffer-substring-no-properties
+                                           start end))
+                                         block)
+                                        cache)))))))
+                   (nreverse cache))))))
    collect (cons buffer (cdr dialog-xref--identifier-cache))))
 
 (defun dialog-xref--match-string-syntax (syntax1 syntax2)
