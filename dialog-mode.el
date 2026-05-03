@@ -2193,7 +2193,11 @@ INTERACTIVE calls are handled."
                               (let* ((block (dialog--parse-block))
                                      (start (dialog-statement-position block))
                                      (end (dialog--list-end start)))
-                                (when end  ; Only parse a closed syntax form.
+                                (when (and
+                                       ;; Closed syntax form.
+                                       end
+                                       ;; No parse error.
+                                       (listp (dialog-statement-syntax block)))
                                   (cl-incf end)
                                   (goto-char end)
                                   (push (cons
@@ -2250,7 +2254,7 @@ string elements in both lists have the same positions and are `equal'."
          (looking-back (dialog-rx unescaped) (line-beginning-position))
          (pcase (dialog--parse-block-at-point)
            ((and (app dialog-statement-syntax syntax)
-                 (guard syntax))
+                 (guard (listp syntax)))  ; No parse error.
             (propertize
              (dialog--normalize-string
               (buffer-substring-no-properties (point) (1+ (dialog--list-end))))
