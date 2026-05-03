@@ -475,6 +475,9 @@ the statement."
            (dialog-statement-syntax inner-block))))
     (dialog-statement-syntax block)))
 
+(defvar dialog-display-parse-errors nil
+  "Specifies whether parsing errors are displayed.")
+
 (defun dialog--parse-statement-syntax ()
   "Parse the inner contents of a special statement list.
 
@@ -506,8 +509,9 @@ comment."
                             ((rx bos (char (?1 . ?9)) (0+ numeric) eos) 'number)
                             (string string)))))
           (scan-error
-           (message "Parse error: character %d in buffer %s"
-                    (point) (buffer-name))
+           (when dialog-display-parse-errors
+             (message "Parse error: character %d in buffer %s"
+                      (point) (buffer-name)))
            'parse-error))))))
 
 (defun dialog--statement-token (statement)
