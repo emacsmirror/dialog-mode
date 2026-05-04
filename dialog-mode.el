@@ -403,9 +403,9 @@ the statement (ignoring any prefix characters).  Valid values are \"{\",
 when resolved as a syntax token.
 
 The `syntax' slot is a list which represents the parsed top-level inside
-the statement."
+the statement or the symbol `parse-error' if parsing failed."
   (symbol nil :type symbol)
-  (syntax nil :type list))
+  (syntax nil :type (or list symbol)))
 
 (cl-defgeneric dialog--opens-block-p (block)
   "Return whether BLOCK increases the indentation level."
