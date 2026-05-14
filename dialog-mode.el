@@ -1107,6 +1107,8 @@ shown."
     ("@dynamic"    . "Show the current state of all dynamic predicates")
     ("@g"          . "Undo, then re-enter the last line of game input")
     ("@help"       . "Display the debugger help text")
+    ("@more"       . "Enable output paging")
+    ("@nomore"     . "Disable output paging")
     ("@quit"       . "Quit the debugger")
     ("@replay"     . "Restart, then replay the accumulated game input")
     ("@restore"    . "Restart and read game input from a file")
