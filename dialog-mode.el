@@ -955,6 +955,15 @@ value is by using directory local variables.")
   "Specifies the name of the Dialog debugger executable."
   :type 'string)
 
+(defcustom dialog-debug-program-args nil
+  "Specifies additional arguments for the Dialog debug program.
+
+This value should be a list of strings to be inserted between the debug
+program name and the game file names in commands which run the debug
+program.  To specify the list of game files to use, see
+`dialog-game-files'."
+  :type '(repeat string))
+
 (defcustom dialog-debug-as-interp t
   "Specifies whether the debug program runs as a command interpreter.
 
@@ -1020,7 +1029,8 @@ used buffer will be displayed if it exists."
                                      (let ((default-directory game-directory))
                                        (completing-read-multiple
                                         "Game files: "
-                                        #'completion-file-name-table))))))
+                                        #'completion-file-name-table)))))
+             (program-args (append dialog-debug-program-args game-files)))
         (cond (dialog-debug-as-interp
                (setf (buffer-local-value 'default-directory buffer)
                      game-directory)
@@ -1041,12 +1051,12 @@ used buffer will be displayed if it exists."
                                            (format "COLUMNS=%d" (window-width))
                                            process-environment)))
                  (apply #'make-comint-in-buffer
-                        program-basename buffer program nil game-files)))
+                        program-basename buffer program nil program-args)))
               (t
                (message "Starting debug program")
                (let ((default-directory game-directory))
                  (apply #'start-process
-                        program-basename buffer program game-files))))))))
+                        program-basename buffer program program-args))))))))
 
 (defcustom dialog-debug-send-command-default "@replay"
   "Specifies the default command sent to the debug process.

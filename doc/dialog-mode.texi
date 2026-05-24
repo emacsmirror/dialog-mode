@@ -722,7 +722,9 @@ switch to the debug buffer.  The same command is also used to switch
 to an existing debug buffer.  If no game files are configured or
 @code{dialog-debug-run} was called with a prefix argument, a prompt
 will appear to select the game files.  With a double prefix argument
-the game directory can also be selected.
+the game directory can also be selected.  To specify additional
+arguments for the debug program, configure the customization variable
+@code{dialog-debug-program-args}.
 
 @quotation Note
 The prompt for game files is a prompt to select multiple files, where
@@ -735,6 +737,11 @@ temporarily override the current settings rather than initialize them.
 @defopt dialog-debug-program
 Specifies the name of the Dialog debugger executable, either a name to
 be located somewhere on PATH or an absolute path to the file name.
+@end defopt
+
+@defopt dialog-debug-program-args
+Specifies a list of strings to be inserted between the debug program
+name and the game file names in commands which run the debug program.
 @end defopt
 
 @defun dialog-debug-run
