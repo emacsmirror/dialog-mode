@@ -1505,7 +1505,9 @@ it would in traditional terminal."
              (save-restriction
                (widen)
                (let ((inhibit-read-only t))
-                 (replace-region-contents (point-min) (point-max) temp-buffer)))
+                 (replace-region-contents (point-min) (point-max)
+                                          ;; Deprecated type in Emacs 31.
+                                          (lambda () temp-buffer))))
              ;; When this is a brand new buffer, leave point at the start of it.
              (unless old-buffer
                (goto-char (point-min))))))))))
