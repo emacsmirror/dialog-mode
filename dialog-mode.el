@@ -1407,7 +1407,7 @@ it would in traditional terminal."
         ;; so that any window sizes changes don't reset the size to match the
         ;; window.
         (when process-connection-type
-          (advice-add 'window--adjust-process-windows :override #'ignore)
+          (process-put process 'adjust-window-size-function #'ignore)
           (set-process-window-size process 65535 79))
         (run-hooks 'dialog-debug-auto-command-setup-hook))
       ;; Check whether there is a next command to send.
@@ -1428,7 +1428,7 @@ it would in traditional terminal."
         ;; someone is pressing keys as fast as they can and the system is slow,
         ;; so use an idle timer.
         (when process-connection-type
-          (advice-remove 'window--adjust-process-windows #'ignore)
+          (process-put process 'adjust-window-size-function nil)
           (run-with-idle-timer 0.25 nil #'window--adjust-process-windows))))
     ;; Don't insert auto-command output into the Comint buffer.
     (if auto-command "" string)))
