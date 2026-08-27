@@ -1441,7 +1441,12 @@ it would in traditional terminal."
       (add-hook 'comint-preoutput-filter-functions
                 #'dialog-debug-auto-command-send 90 t)
     (remove-hook 'comint-preoutput-filter-functions
-                 #'dialog-debug-auto-command-send t)))
+                 #'dialog-debug-auto-command-send t)
+    ;; Ensure that the default management of the process window size is
+    ;; restored, should the mode be disabled while the filter functions are
+    ;; still active.
+    (when-let* ((process (get-buffer-process (current-buffer))))
+      (process-put process 'adjust-window-size-function nil))))
 
 (defun dialog-debug-auto-output-responder (_string)
   "Respond to process output by sending additional input."
