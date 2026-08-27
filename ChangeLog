@@ -2,10 +2,18 @@
 
 Initial release.
 
-* Version 1.0.1 (????-??-??)
+* Version 1.1.0 (????-??-??)
 
 The value of `dialog-game-files' is now verified to be a list of
 strings before being treated as safe.
 
 Fixed non-string values in the `dialog-game-files' list potentially
 being evaluated during the initial setup of `dialog-trace-mode'.
+
+Running the debugger now defaults to using the "--tag-lines" argument.
+
+The minor mode `dialog-debug-auto-command-mode' now relies on tagged
+line output to identify prompt lines.  Given that this mode is enabled
+in debug buffers by default and the chances of incorrectly identifying
+a prompt line is now much reduced, the lighter string for the mode has
+been removed.

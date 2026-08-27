@@ -380,6 +380,19 @@ existing parser state PPSS over calling `syntax-ppss'."
                unless (dialog--in-comment-p ppss)
                when (cl-plusp (dialog--paren-depth ppss))
                return t))))
+
+(defun dialog--untag-lines ()
+  "Remove the tagged line prefix from each line in the current buffer.
+
+Only a single instance of a tagged line for a prompt is expected to be
+present, located at the end of the buffer."
+  (save-excursion
+    (goto-char (point-min))
+    (while (re-search-forward (rx bol "  ") nil t)
+      (replace-match "")
+      (end-of-line))
+    (goto-char (point-max))
+    (delete-char -3)))
 
 ;;;; Block parser
 
@@ -963,7 +976,7 @@ value is by using directory local variables.")
   "Specifies the name of the Dialog debugger executable."
   :type 'string)
 
-(defcustom dialog-debug-program-args nil
+(defcustom dialog-debug-program-args (list "--tag-lines")
   "Specifies additional arguments for the Dialog debug program.
 
 This value should be a list of strings to be inserted between the debug
@@ -981,6 +994,26 @@ running.  A value of nil means that the process is launched directly
 with no further process control."
   :type 'boolean
   :safe #'booleanp)
+
+(defvar-local dialog-debug-temp-buffers nil
+  "Alist of buffer IDs to temporary buffer objects.")
+
+(defun dialog-debug-temp-buffer (id)
+  "Return the temporary buffer associated with the symbol ID.
+
+If the buffer doesn't exist yet, create it."
+  (let ((buffer (alist-get id dialog-debug-temp-buffers)))
+    (unless (bufferp buffer)
+      (setq buffer (generate-new-buffer " *dialog-debug-temp*"))
+      (push (cons id buffer) dialog-debug-temp-buffers))
+    buffer))
+
+(defun dialog-debug-kill-temp-buffers ()
+  "Kill all temporary buffers associated with this buffer."
+  (cl-loop for (nil . buffer) in dialog-debug-temp-buffers
+           when (buffer-live-p buffer)
+           do (kill-buffer buffer))
+  (setq dialog-debug-temp-buffers nil))
 
 ;;;###autoload
 (defun dialog-debug-run (&optional prompt)
@@ -1040,6 +1073,10 @@ used buffer will be displayed if it exists."
                                         #'completion-file-name-table)))))
              (program-args (append dialog-debug-program-args game-files)))
         (cond (dialog-debug-as-interp
+               ;; Clear previous temporary buffers from previous processes.
+               (with-current-buffer buffer
+                 (dialog-debug-kill-temp-buffers))
+               ;; Set the current directory in the debug buffer.
                (setf (buffer-local-value 'default-directory buffer)
                      game-directory)
                ;; Display the buffer before starting the process so that any
@@ -1333,6 +1370,10 @@ it would in traditional terminal."
   (setq-local comint-prompt-regexp (rx line-start "> "))
   (setq-local process-connection-type dialog-debug-use-pty)
   (setq-local scroll-conservatively most-positive-fixnum)
+  (add-hook 'comint-preoutput-filter-functions
+            #'dialog-debug-preoutput-filter 90 t)
+  (add-hook 'kill-buffer-hook
+            #'dialog-debug-kill-temp-buffers 90 t)
   (hack-dir-local-variables-non-file-buffer)
   ;; After local variables have loaded.
   (dialog--add-to-menu))
@@ -1361,87 +1402,98 @@ it would in traditional terminal."
   "A hook which is called before any auto-commands have been sent."
   :type 'hook)
 
-(defun dialog-debug-auto-command-send (string)
-  "Check STRING for a prompt and respond by sending debug commands."
-  (let* ((auto-command (car dialog-debug-auto-command-queue))
-         (at-prompt (if auto-command
-                        ;; This is auto-command output.  Insert it into capture
-                        ;; buffer and then check for a prompt in that buffer.
-                        ;; Process ANSI control sequences for the most recent
-                        ;; line and the new chunk of output.
-                        (with-current-buffer dialog-debug-auto-command-buffer
-                          (let ((inhibit-read-only t)
-                                (line-pos (line-beginning-position)))
-                            (insert string)
-                            (ansi-color-filter-region line-pos (point)))
-                          ;; Don't override the start position for the next
-                          ;; usage of `ansi-color-filter-region' to ensure that
-                          ;; ANSI sequences split between chunks are processed.
-                          (setq ansi-color-context-region nil)
-                          ;; Check for a prompt in the capture buffer.
-                          (string-equal "> " (buffer-substring-no-properties
-                                              (line-beginning-position)
-                                              (point))))
-                      ;; This is regular output.  Check for the prompt in the
-                      ;; last line of the Comint buffer with the new string
-                      ;; appended to it once ANSI control sequences are
-                      ;; processed.
-                      (string-suffix-p
-                       "\n> "
-                       (ansi-color-apply
-                        (concat (buffer-substring-no-properties
-                                 (line-beginning-position) (point))
-                                string)))))
-         (process (get-buffer-process (current-buffer))))
-    (when at-prompt
-      ;; Run hooks when seeing a prompt after an auto-command.
-      (when auto-command
-        (run-hooks 'dialog-debug-auto-command-hook))
-      ;; Setup auto-commands if at the prompt and popping the current
-      ;; auto-command from the queue gives no command.
-      (unless (pop dialog-debug-auto-command-queue)
-        ;; Setup the auto-command queue.
-        (setq dialog-debug-auto-command-queue
-              (copy-sequence dialog-debug-auto-commands))
-        ;; Make the pseudo-terminal taller and override the adjustment function
-        ;; so that any window sizes changes don't reset the size to match the
-        ;; window.
-        (when process-connection-type
-          (process-put process 'adjust-window-size-function #'ignore)
-          (set-process-window-size process 65535 79))
-        (run-hooks 'dialog-debug-auto-command-setup-hook))
-      ;; Check whether there is a next command to send.
-      (if-let* ((next-command (car dialog-debug-auto-command-queue)))
-          (progn
-            ;; Create/Clear the output buffer and send the next auto-command.
-            (with-current-buffer (setq
-                                  dialog-debug-auto-command-buffer
-                                  (get-buffer-create
-                                   (dialog--derived-buffer-name
-                                    (buffer-name) "auto-command" 'private)))
-              (let ((inhibit-read-only t))
-                (erase-buffer)))
-            ;; Send the next command.
-            (comint-simple-send process next-command))
-        ;; All auto-commands have been sent, and so restore the pseudo-terminal
-        ;; size.  An immediate resize can potentially jam the Comint buffer if
-        ;; someone is pressing keys as fast as they can and the system is slow,
-        ;; so use an idle timer.
-        (when process-connection-type
-          (process-put process 'adjust-window-size-function nil)
-          (run-with-idle-timer 0.25 nil #'window--adjust-process-windows))))
-    ;; Don't insert auto-command output into the Comint buffer.
-    (if auto-command "" string)))
+(defun dialog-debug-preoutput-filter (string)
+  "Filter STRING as output for the debug buffer.
+
+When the debug process is not outputting tagged lines, just return
+STRING with no changes.  Otherwise buffer and process all output,
+looking for a tagged line which indicates a prompt.  If
+`dialog-debug-auto-command-mode' is enabled, when the prompt can accept
+a new command, send additional commands and buffer the associated
+output."
+  (let ((process (get-buffer-process (current-buffer))))
+    (if (member "--tag-lines" (process-command process))
+        ;; Using tagged lines.
+        (let* ((auto-command-mode
+                (bound-and-true-p dialog-debug-auto-command-mode))
+               (auto-command
+                (and auto-command-mode dialog-debug-auto-command-queue))
+               (at-prompt
+                (if auto-command
+                    ;; This is auto-command output.
+                    (with-current-buffer dialog-debug-auto-command-buffer
+                      (insert string)
+                      (let ((last-line (buffer-substring-no-properties
+                                        (line-beginning-position) (point))))
+                        ;; Look for tagged line indicating a prompt that can
+                        ;; accept a new command, i.e. the end of auto-command
+                        ;; output.
+                        (string-equal "> " last-line)))
+                  ;; This is regular output.
+                  (with-current-buffer (dialog-debug-temp-buffer 'output)
+                    (insert string)
+                    ;; Look for a tagged line indicating any type of prompt.
+                    (let* ((last-line (buffer-substring-no-properties
+                                       (line-beginning-position) (point)))
+                           (prompt-for-command (string-equal "> " last-line))
+                           (prompt-for-key (string-equal ") " last-line)))
+                      (cond ((or prompt-for-key prompt-for-command)
+                             (dialog--untag-lines)
+                             (setq string (buffer-substring-no-properties
+                                           (point-min) (point-max)))
+                             (erase-buffer)
+                             ;; At command prompt.
+                             prompt-for-command)
+                            (t
+                             (setq string "")
+                             ;; Not at command prompt.
+                             nil)))))))
+          (when (and auto-command-mode at-prompt)
+            ;; Run hooks when seeing a prompt after an auto-command.
+            (when auto-command
+              (run-hooks 'dialog-debug-auto-command-hook))
+            ;; Setup auto-commands if at the prompt and popping the current
+            ;; auto-command from the queue gives no command.
+            (unless (pop dialog-debug-auto-command-queue)
+              ;; Setup the auto-command queue.
+              (setq dialog-debug-auto-command-queue
+                    (copy-sequence dialog-debug-auto-commands))
+              ;; Make the pseudo-terminal taller and override the adjustment
+              ;; function so that any window size changes don't reset the size
+              ;; to match the window.
+              (when process-connection-type
+                (process-put process 'adjust-window-size-function #'ignore)
+                (set-process-window-size process 65535 79))
+              (run-hooks 'dialog-debug-auto-command-setup-hook))
+            ;; Check whether there is a next command to send.
+            (if-let* ((next-command (car dialog-debug-auto-command-queue)))
+                (progn
+                  ;; Create/Clear the output buffer and send the next
+                  ;; auto-command.
+                  (with-current-buffer
+                      (setq dialog-debug-auto-command-buffer
+                            (dialog-debug-temp-buffer 'auto-command))
+                    (erase-buffer))
+                  ;; Send the next command.
+                  (comint-simple-send process next-command))
+              ;; All auto-commands have been sent, and so restore the
+              ;; pseudo-terminal size.  An immediate resize can potentially jam
+              ;; the Comint buffer if someone is pressing keys as fast as they
+              ;; can and the system is slow, so use an idle timer.
+              (when process-connection-type
+                (process-put process 'adjust-window-size-function nil)
+                (run-with-idle-timer
+                 0.25 nil #'window--adjust-process-windows))))
+          ;; Don't insert auto-command output into the Comint buffer.
+          (if auto-command "" string))
+      ;; Not using tagged lines.
+      string)))
 
 (define-minor-mode dialog-debug-auto-command-mode
   "Enable automatic commands from Comint output filters."
-  :lighter " AutoCommand"
+  :lighter nil  ; On by default and active when tagged lines are used.
   :interactive (dialog-debug-mode)
-  (if dialog-debug-auto-command-mode
-      (add-hook 'comint-preoutput-filter-functions
-                #'dialog-debug-auto-command-send 90 t)
-    (remove-hook 'comint-preoutput-filter-functions
-                 #'dialog-debug-auto-command-send t)
+  (unless dialog-debug-auto-command-mode
     ;; Ensure that the default management of the process window size is
     ;; restored, should the mode be disabled while the filter functions are
     ;; still active.
@@ -1479,6 +1531,12 @@ it would in traditional terminal."
   "Collect output from the auto-command buffer and store it for later use."
   (when-let* ((command-output
                (with-current-buffer dialog-debug-auto-command-buffer
+                 ;; Process ANSI sequences.
+                 (ansi-color-apply-on-region (point-min) (point-max))
+                 (setq ansi-color-context-region nil)  ; Drop state.
+                 ;; Untag lines.
+                 (dialog--untag-lines)
+                 ;; Parse strings.
                  (goto-char (point-min))
                  (and (re-search-forward (rx line-start
                                              (group (1+ (not control)))

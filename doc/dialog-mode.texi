@@ -742,6 +742,8 @@ be located somewhere on PATH or an absolute path to the file name.
 @defopt dialog-debug-program-args
 Specifies a list of strings to be inserted between the debug program
 name and the game file names in commands which run the debug program.
+Some Dialog Mode features may depend on specific arguments being
+present in this list (see @ref{Viewing game state information}).
 @end defopt
 
 @defun dialog-debug-run
@@ -1062,8 +1064,8 @@ which always succeeds:
 
 @findex dialog-debug-auto-command-mode
 When a game is running in the debug buffer, it is possible to
-automatically send additional commands every time that a new prompt
-for game input appears.  The minor mode
+automatically send additional commands every time that a prompt for a
+new game command appears.  The minor mode
 @code{dialog-debug-auto-command-mode} is enabled by default in debug
 buffers and is pre-configured to send the commands @samp{@@dynamic}
 and @samp{@@tree}.  The command and command output will not be
@@ -1075,19 +1077,30 @@ which is stored in the buffer-local variable
 command output and are pre-configured to generate additional buffers
 which represents game state information.
 
+@quotation Note
+To ensure that prompts at which commands can be sent are correctly
+detected, @code{dialog-debug-auto-command-mode} currently relies on
+the debug program being started with the ``--tag-lines'' argument.  If
+the value of @code{dialog-debug-program-args} is customized, ensure
+that ``--tag-lines'' remains in the list to keep the mode working.
+@end quotation
+
 @defvar dialog-debug-auto-command-buffer
 The buffer stored in this variable contains the command and output
-from a command which was automatically sent.
+associated with a single automatically sent command.  When a new debug
+process is started or the debug buffer is killed, the buffer
+referenced by this variable is no longer guaranteed to exist.
 @end defvar
 
 @defopt dialog-debug-auto-command-hook
-Functions added to this hook are called when the game prompt reappears
-after automatically sending a command.
+Functions added to this hook are called after automatically sending a
+command and the output associated with that command has completed.
 @end defopt
 
 @defopt dialog-debug-auto-command-setup-hook
-Functions added to this hook are called when the game prompt appears
-before any commands are automatically sent.
+Functions added to this hook are called when the game displays a
+prompt for a new command in the debug buffer, before any commands are
+automatically sent.
 @end defopt
 
 @findex dialog-data-mode
@@ -1095,16 +1108,17 @@ before any commands are automatically sent.
 @kindex C-c C-d t
 If using the pre-configured hook values, two buffers containing game
 state information will be created or updated every time that the
-prompt for input reappears.  Both of these buffers use the major mode
-@code{dialog-data-mode} and are named with a buffer name that is
-derived from the current debug buffer name.  The commands
-@code{dialog-data-display-dynamic} and @code{dialog-data-display-tree}
-will display these buffers and have the key-bindings @kbd{C-c C-d d}
-and @kbd{C-c C-d t} respectively in @code{dialog-mode} and
-@code{dialog-debug-mode} buffers.  It is presumed that any specific
-requirements around how or where @code{dialog-data-mode} buffers
-should be displayed will have been handled through the configuration
-of @code{display-buffer-alist} (see @ref{Example configuration}).
+prompt for a new command appears in the debug buffer.  Both of these
+buffers use the major mode @code{dialog-data-mode} and are named with
+a buffer name that is derived from the current debug buffer name.  The
+commands @code{dialog-data-display-dynamic} and
+@code{dialog-data-display-tree} will display these buffers and have
+the key-bindings @kbd{C-c C-d d} and @kbd{C-c C-d t} respectively in
+@code{dialog-mode} and @code{dialog-debug-mode} buffers.  It is
+presumed that any specific requirements around how or where
+@code{dialog-data-mode} buffers should be displayed will have been
+handled through the configuration of @code{display-buffer-alist} (see
+@ref{Example configuration}).
 
 @defun dialog-data-display-dynamic
 Display the buffer which contains data derived from the
