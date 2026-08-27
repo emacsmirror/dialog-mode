@@ -1,3 +1,11 @@
 * Version 1.0.0 (2026-08-23)
 
 Initial release.
+
+* Version 1.0.1 (????-??-??)
+
+The value of `dialog-game-files' is now verified to be a list of
+strings before being treated as safe.
+
+Fixed non-string values in the `dialog-game-files' list potentially
+being evaluated during the initial setup of `dialog-trace-mode'.

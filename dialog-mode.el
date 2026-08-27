@@ -926,8 +926,16 @@ region which contains such lines."
 The value should be a list of strings.  The recommended way to set this
 value is by using directory local variables.")
 
+(defun dialog-game-files-valid-p (game-files)
+  "Return non-nil if GAME-FILES is a list of strings."
+  (and (listp game-files)
+       (cl-loop for file in game-files
+                unless (stringp file)
+                return nil
+                finally return t)))
+
 ;;;###autoload
-(put 'dialog-game-files 'safe-local-variable #'listp)
+(put 'dialog-game-files 'safe-local-variable #'dialog-game-files-valid-p)
 
 (defcustom dialog-debug-buffer-name "*dgdebug*"
   "Specifies the buffer name used for the debug process buffer."
@@ -2094,16 +2102,17 @@ a negative argument."
   :interactive t
   (cond (dialog-trace-mode
          (setq dialog-trace-file-regexp
-               (rx-to-string '(seq
-                               line-start
-                               ?|
-                               (1+ not-newline)
-                               " "
-                               (group (eval (cons 'or dialog-game-files)))
-                               ?:
-                               (group (1+ numeric))
-                               line-end)
-                             'no-group))
+               (let ((files-regexp (regexp-opt dialog-game-files)))
+                 (rx-to-string `(seq
+                                 line-start
+                                 ?|
+                                 (1+ not-newline)
+                                 " "
+                                 (group (regexp ,files-regexp))
+                                 ?:
+                                 (group (1+ numeric))
+                                 line-end)
+                               'no-group)))
          (jit-lock-register #'dialog-trace--propertize)
          ;; Run now on the entire buffer, otherwise text-property searches are
          ;; limited to the visible portion of the buffer.
