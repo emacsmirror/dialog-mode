@@ -17,9 +17,9 @@ git clone https://git.sr.ht/~mew/dialog-mode
 @end example
 
 The value of @code{load-path} can be modified in the Emacs
-configuration, although such a change will need to placed before any
-actions which attempt to load the package.  The following example
-shows how to load package, assuming that the repository has been
+configuration, although such a change will need to be placed before
+any actions which attempt to load the package.  The following example
+shows how to load the package, assuming that the repository has been
 cloned within a directory named "manual-packages" within the user's
 ".emacs.d" directory:
 

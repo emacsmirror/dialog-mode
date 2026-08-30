@@ -225,7 +225,7 @@ The indentation level is incremented for lines following special
 syntax which defines a logical block.
 @end itemize
 
-There are two excepts to the above which are configured by default,
+There are two exceptions to the above which are configured by default,
 both implemented to match conventions used by the Dialog standard
 library and example code:
 
@@ -291,7 +291,7 @@ indentation column for the line.
 If @code{electric-indent-mode} is enabled, lines will be re-indented
 as newline characters are inserted.  The exception to this is when the
 newline is inserted on a line which begins in column 0, in which case
-the indentation will not be be modified.  This means that when writing
+the indentation will not be modified.  This means that when writing
 rule-heads the next line is assumed to be another rule-head, and when
 writing a rule-body the next line is assumed to be a continuation of
 that same rule body.  Adding and removing the leading white-space on
@@ -304,7 +304,7 @@ default.
 Toggle indentation on the current line.  When called from a position
 which is less than or equal to the indentation column, move to the
 indentation column.  The size of the inserted indentation will be
-appropriate the current block level.
+appropriate to the current block level.
 @end defun
 
 @menu
@@ -798,7 +798,7 @@ current debug process, otherwise send the value of
 @end defun
 
 @defopt dialog-debug-send-command-default
-Specifies the default command to the send to the debug program.
+Specifies the default command to send to the debug program.
 @end defopt
 
 When using the prompt to send a debug command, a list of preset
@@ -1075,7 +1075,7 @@ which is stored in the buffer-local variable
 @code{dialog-debug-auto-command-hook} and
 @code{dialog-debug-auto-command-setup-hook} can be used to act on
 command output and are pre-configured to generate additional buffers
-which represents game state information.
+which represent game state information.
 
 @quotation Note
 To ensure that prompts at which commands can be sent are correctly
