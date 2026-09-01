@@ -1494,6 +1494,8 @@ output."
   :lighter nil  ; On by default and active when tagged lines are used.
   :interactive (dialog-debug-mode)
   (unless dialog-debug-auto-command-mode
+    ;; Clear the auto-command queue.
+    (setq dialog-debug-auto-command-queue nil)
     ;; Ensure that the default management of the process window size is
     ;; restored, should the mode be disabled while the filter functions are
     ;; still active.
