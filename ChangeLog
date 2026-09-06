@@ -2,7 +2,7 @@
 
 Initial release.
 
-* Version 1.1.0 (????-??-??)
+* Version 1.1.0 (2026-09-06)
 
 The value of `dialog-game-files' is now verified to be a list of
 strings before being treated as safe.
