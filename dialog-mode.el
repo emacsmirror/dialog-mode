@@ -509,7 +509,7 @@ comment."
                        (`(,_ . ?#)  (forward-sexp) 'object)
                        (`(,_ . ?$)  (forward-sexp) 'variable)
                        (`(,_ . ?*)  (forward-sexp) 'topic)
-                       ('(?* . ?\() (forward-sexp) 'mutli-query)
+                       ('(?* . ?\() (forward-sexp) 'multi-query)
                        ('(?@ . ?\() (forward-sexp) 'access-predicate)
                        (`(?@ . ,_)  (forward-sexp) 'word)
                        ('(?~ . ?\() (forward-sexp) 'not-query)
