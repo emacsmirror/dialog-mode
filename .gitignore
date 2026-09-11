@@ -3,3 +3,6 @@ dialog-mode.html
 dialog-mode.info
 dialog-mode.pdf
 dialog-mode.t2d
+# ELPA-generated files.
+dialog-mode-autoloads.el
+dialog-mode-pkg.el
