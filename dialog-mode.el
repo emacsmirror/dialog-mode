@@ -1237,6 +1237,7 @@ Empty lines are not sent."
   (interactive)
   (if (use-region-p)
       (save-excursion
+        ;; The `with-restriction' macro isn't available until Emacs 29.
         (save-restriction
           (narrow-to-region (region-beginning) (region-end))
           (goto-char (point-min))
